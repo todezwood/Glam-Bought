@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EFEFF2">
+<title>GlamBought</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;1,400&family=Jost:wght@300;400;500&family=Pinyon+Script&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1E1C26; --charcoal:#565051; --lav:#CFC6DB; --lav-ink:#A698BE; --lav-icon:#B4A7CA;
+  --lav-deep:#6B5C8C; --lilac:#F6EFF9; --mist:#EFEFF2; --white:#fff; --save:#5E7F73; --warn:#9A6B4F;
+  --shadow:0 1px 2px rgba(30,28,38,.04),0 12px 32px -12px rgba(107,92,140,.22);
+  --serif:'Cormorant Garamond',Georgia,serif; --sans:'Jost',system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font:300 15px/1.5 var(--sans);color:var(--charcoal);background:#DAD6E2;display:grid;place-items:center;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.phone{position:relative;width:390px;height:844px;max-height:100dvh;border-radius:44px;overflow:hidden;background:var(--mist);
+  box-shadow:0 0 0 10px #17151d,0 40px 80px -30px rgba(30,28,38,.5);display:flex;flex-direction:column}
+@media (max-width:480px){body{background:var(--mist)}.phone{width:100vw;height:100dvh;border-radius:0;box-shadow:none}}
+.glow{position:absolute;inset:0 0 auto 0;height:340px;background:radial-gradient(120% 90% at 50% 0%,var(--lilac),transparent 70%);pointer-events:none}
+header{position:relative;display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 20px 10px}
+.wordmark{font:300 13px var(--serif);letter-spacing:.42em;color:var(--ink);padding-left:.42em}
+.link{font:500 10.5px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--lav-deep)}
+.link.pulse{animation:pulse 1.2s var(--ease)}
+@keyframes pulse{40%{transform:scale(1.18);color:var(--ink)}}
+main{position:relative;flex:1;overflow-y:auto;padding:4px 20px 16px;scroll-behavior:smooth}
+.label{font:500 10.5px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--lav-deep)}
+h1{font:300 34px/1.1 var(--serif);color:var(--ink);margin:14px 0 8px}
+h2{font:500 22px/1.15 var(--serif);color:var(--ink)}
+.home{text-align:center;padding-top:8px}
+.home p.sub{margin-bottom:26px}
+.logo{width:150px;margin:6px auto 0;display:block}
+.case{display:block;width:100%;text-align:left;background:var(--white);border-radius:28px;padding:18px 20px;margin-bottom:12px;box-shadow:var(--shadow);transition:transform .3s var(--ease)}
+.case:active{transform:scale(.98)}
+.case h2{margin:4px 0 2px}
+.msg{margin:14px 0;animation:rise .42s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+.user{margin-left:48px;background:var(--charcoal);color:#fff;padding:11px 16px;border-radius:20px 20px 6px 20px;width:fit-content;margin-left:auto;max-width:82%}
+.agent{display:flex;gap:10px;align-items:flex-start}
+.avatar{flex:none;width:28px;height:28px;border-radius:50%;background:var(--lav-icon);color:#fff;font:16px 'Pinyon Script',cursive;display:grid;place-items:center}
+.bubble{background:var(--lilac);padding:12px 16px;border-radius:6px 20px 20px 20px;max-width:calc(100% - 38px)}
+.bubble p+p,.bubble ul{margin-top:8px}.bubble ul{padding-left:18px}.bubble strong{font-weight:500;color:var(--ink)}
+.card{background:var(--white);border-radius:28px;padding:20px;box-shadow:var(--shadow);margin:14px 0;animation:rise .42s var(--ease) both}
+/* activity */
+.step{display:flex;gap:12px;align-items:flex-start;padding:9px 0;opacity:.38;transition:opacity .4s}
+.step.on,.step.done{opacity:1}
+.ring{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--lav);position:relative;margin-top:1px}
+.step.on .ring{border-color:var(--lav-deep);border-top-color:transparent;animation:spin .9s linear infinite}
+.step.done .ring{background:var(--lav-deep);border-color:var(--lav-deep)}
+.step.done .ring:after{content:"";position:absolute;left:6px;top:3px;width:5px;height:9px;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.step .t{font:400 15px var(--sans);color:var(--ink)}
+.step .d{font-size:13px;min-height:18px}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pill{background:var(--lilac);color:var(--lav-deep);font-size:12px;padding:3px 10px;border-radius:999px;animation:rise .5s var(--ease) both}
+.summary{font-size:13px;text-align:center;color:var(--lav-deep);margin:10px 0}
+/* basket */
+.bhead{display:flex;align-items:baseline;justify-content:space-between;margin-top:4px}
+.total{font:300 40px var(--serif);color:var(--ink);font-variant-numeric:tabular-nums}
+.bar{height:3px;background:var(--mist);border-radius:3px;margin:10px 0 6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--lav-deep);width:0;transition:width 1s var(--ease)}
+.item{display:grid;grid-template-columns:56px 1fr;gap:14px;padding:18px 0;border-top:1px solid var(--mist)}
+.tile{width:56px;height:56px;border-radius:16px;background:var(--lilac);display:grid;place-items:center;font:300 26px var(--serif);color:var(--lav-ink)}
+.tag{display:inline-block;font:500 9.5px var(--sans);letter-spacing:.16em;padding:3px 9px;border-radius:999px;background:var(--lav-deep);color:#fff;margin-bottom:6px}
+.tag.alt{background:none;color:var(--lav-deep);box-shadow:inset 0 0 0 1px var(--lav)}
+.name{font:500 18px/1.2 var(--serif);color:var(--ink);margin:1px 0 2px}
+.meta{font-size:13px}
+.price{font:400 16px var(--sans);color:var(--ink);font-variant-numeric:tabular-nums;margin-top:6px}
+.price s{color:var(--lav-ink);font-weight:300;margin-left:6px}.price b{color:var(--save);font-weight:500;margin-left:6px;font-size:13px}
+.reason{font:italic 400 16px/1.35 var(--serif);color:var(--charcoal);margin-top:8px}
+.ev{display:flex;gap:8px;font-size:12.5px;margin-top:7px;align-items:baseline}
+.src{flex:none;font:500 9px var(--sans);letter-spacing:.14em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--lilac);color:var(--lav-deep)}
+.src.web{background:#E8F0EC;color:var(--save)}
+.foot{font-size:12px;color:var(--lav-deep);margin-top:8px}.foot .warn{color:var(--warn)}
+.excl{border-top:1px solid var(--mist);padding-top:14px;font-size:13px}.excl div{margin-top:6px}
+.savings{color:var(--save);font-weight:400;margin:4px 0 14px}
+.cta{display:block;width:100%;padding:15px;border-radius:999px;background:var(--lav-deep);color:#fff;font:500 11.5px var(--sans);letter-spacing:.2em;text-transform:uppercase;transition:transform .3s var(--ease)}
+.cta:active{transform:scale(.98)}.cta:disabled{opacity:.5}
+.ghost{background:none;color:var(--lav-deep);box-shadow:inset 0 0 0 1px var(--lav);margin-top:10px}
+.buy{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:1px solid var(--mist);text-decoration:none;color:var(--ink)}
+.buy span:last-child{color:var(--lav-deep);font-weight:400}
+.memory{text-align:center;margin:18px 0;animation:rise .5s var(--ease) both}
+.memory .chip{display:inline-flex;gap:6px;align-items:center;background:var(--lilac);color:var(--lav-deep);padding:6px 14px;border-radius:999px;font:500 10.5px var(--sans);letter-spacing:.16em;text-transform:uppercase}
+.memory p{font:italic 400 17px var(--serif);margin-top:8px}
+.sparkle{width:12px;height:12px;animation:twinkle .6s var(--ease)}
+@keyframes twinkle{from{transform:scale(0) rotate(-90deg)}}
+/* composer */
+form{position:relative;display:flex;gap:8px;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--mist) 30%)}
+input{flex:1;border:0;outline:0;border-radius:999px;padding:14px 18px;font:300 15px var(--sans);color:var(--ink);background:var(--white);box-shadow:var(--shadow)}
+input::placeholder{color:var(--lav-ink)}
+.send{width:48px;height:48px;border-radius:50%;background:var(--lav-icon);color:#fff;display:grid;place-items:center}
+/* sheet */
+.scrim{position:absolute;inset:0;background:rgba(30,28,38,.32);opacity:0;pointer-events:none;transition:opacity .35s;z-index:5}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:86%;overflow-y:auto;background:var(--white);border-radius:28px 28px 0 0;padding:26px 22px calc(26px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .45s var(--ease);z-index:6}
+.open.scrim{opacity:1;pointer-events:auto}.open.sheet{transform:none}
+.sheet h2{font-size:28px;font-weight:300;margin:6px 0 6px}
+.prov{margin-top:20px}.prov pre{white-space:pre-wrap;font:300 14px/1.55 var(--sans);margin-top:8px}
+.skeleton{height:14px;border-radius:7px;margin:10px 0;background:linear-gradient(90deg,var(--lilac),#fff,var(--lilac));background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+@keyframes shimmer{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="glow"></div>
+  <header>
+    <button class="link" id="homeBtn" aria-label="Home">Home</button>
+    <div class="wordmark">GLAMBOUGHT</div>
+    <button class="link" id="profileBtn">Profile</button>
+  </header>
+  <main id="main"></main>
+  <form id="form" autocomplete="off">
+    <input id="input" placeholder="What are we shopping for?" enterkeyhint="send">
+    <button class="send" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+  </form>
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s), main = $('#main'), sheet = $('#sheet'), scrim = $('#scrim');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = u => /^https:\/\//i.test(u || '') ? esc(u) : '#';
+const money = (n, cur) => n == null ? '' : ({USD:'$',EUR:'€',GBP:'£'}[cur] || '$') + Number(n).toFixed(Number(n) % 1 ? 2 : 0);
+const SPARKLE = '<svg class="sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12z"/></svg>';
+const LOGO = `<svg class="logo" viewBox="0 0 120 80" fill="none"><ellipse cx="60" cy="40" rx="54" ry="30" transform="rotate(-18 60 40)" stroke="#A698BE" stroke-width="1.2"/><path transform="translate(101 8) scale(.42)" fill="#A698BE" d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12z"/><text x="60" y="54" text-anchor="middle" font-family="Pinyon Script, cursive" font-size="46" fill="#A698BE">gb</text></svg>`;
+
+const CASES = [
+  ['Tonight', 'A foundation for dinner', 'Buy today in San Francisco, up to $65.',
+   "I'm going to dinner tonight in SF and need a new foundation. Medium coverage, max $65. I'm happy to splurge if it's really worth it. Find something I can buy today, and check whether anything good is on sale."],
+  ['The routine', 'Build my routine', 'Serum and moisturiser, under $100.',
+   "I need a hydrating serum and a moisturiser, $100 total. Happy to splurge on the serum, price sensitive on the moisturiser. Check sales."],
+  ['Tell me', "Something didn't work", "I'll remember it.",
+   "That vitamin C serum I tried irritated my skin. It stung and left me red."],
+];
+
+let basket = null, activity = null, busy = false, started = 0;
+
+function home() {
+  main.innerHTML = `<section class="home">${LOGO}<h1>Beauty, done for you.</h1>
+    <p class="sub">Your personal beauty agent. Discover. Shop. Glow.</p>
+    ${CASES.map((c, i) => `<button class="case" data-i="${i}"><span class="label">${c[0]}</span><h2>${c[1]}</h2><span>${c[2]}</span></button>`).join('')}</section>`;
+  main.querySelectorAll('.case').forEach(b => b.onclick = () => send(CASES[b.dataset.i][3]));
+}
+
+function add(html) {
+  if (main.querySelector('.home')) main.innerHTML = '';
+  const atBottom = main.scrollHeight - main.scrollTop - main.clientHeight < 120;
+  const el = document.createElement('div');
+  el.innerHTML = html;
+  const node = el.firstElementChild;
+  main.appendChild(node);
+  if (atBottom) requestAnimationFrame(() => main.scrollTop = main.scrollHeight);
+  return node;
+}
+
+function md(text) {
+  const blocks = esc(text.trim()).split(/\n{2,}/).map(b => {
+    const lines = b.split('\n');
+    if (lines.every(l => /^\s*([-*•]|\d+\.)\s+/.test(l))) return '<ul>' + lines.map(l => '<li>' + l.replace(/^\s*([-*•]|\d+\.)\s+/, '') + '</li>').join('') + '</ul>';
+    return '<p>' + b.replace(/^#+\s*/gm, '').replace(/\n/g, '<br>') + '</p>';
+  }).join('');
+  return blocks.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+}
+
+/* ---------- activity card ---------- */
+const STEPS = [['remember', 'Remembering you'], ['shop', 'Shopping the web'], ['balance', 'Balancing your budget']];
+function startActivity() {
+  started = Date.now();
+  activity = add(`<div class="card"><span class="label">Working on it</span>
+    ${STEPS.map(([k, t]) => `<div class="step" data-k="${k}"><div class="ring"></div><div><div class="t">${t}</div><div class="d"></div></div></div>`).join('')}</div>`);
+  activity.counts = {searches: 0, pages: 0, retailers: new Set()};
+  activity.slow = setTimeout(() => { const s = activity?.querySelector('.step.on .d'); if (s && !s.textContent) s.textContent = 'Still looking. Good things take a minute.'; }, 20000);
+}
+function onEvent(e) {
+  if (e.type === 'memory_write') return memoryPill(e.label);
+  if (!activity || !e.step) return;
+  const order = STEPS.map(s => s[0]), idx = order.indexOf(e.step === 'act' ? 'balance' : e.step);
+  activity.querySelectorAll('.step').forEach((el, i) => { if (i < idx) { el.classList.remove('on'); el.classList.add('done'); } });
+  const el = activity.querySelector(`.step[data-k="${order[idx]}"]`); if (!el) return;
+  const d = el.querySelector('.d'), c = activity.counts;
+  if (e.type === 'tool_start') {
+    el.classList.add('on'); el.classList.remove('done');
+    if (e.tool === 'search_beauty_web') c.searches++;
+    if (e.tool === 'refresh_market') { c.pages++; const m = /https?:\/\/(?:www\.)?([^./]+)/.exec(e.input?.url || ''); if (m) c.retailers.add(m[1][0].toUpperCase() + m[1].slice(1)); }
+    if (e.step === 'shop') d.textContent = [...c.retailers].join(' · ') || 'Searching retailers' , d.textContent += c.pages ? ` · ${c.pages} live page${c.pages > 1 ? 's' : ''} checked` : '';
+    if (e.tool === 'rank_products') d.textContent = `Comparing ${(e.input?.candidates || []).length} offers in a secure sandbox`;
+    if (e.tool === 'create_shopping_plan') d.textContent = 'Preparing your plan';
+  }
+  if (e.type === 'tool_end' && e.step === 'remember' && e.detail && !el.querySelector('.pills')) {
+    const facts = ['Dry', 'Sensitive', 'Dark Winter', 'Fragrance-free', 'Natural finish', 'No matte', 'Sephora'].filter(f => new RegExp(f.replace('-', '.?'), 'i').test(e.detail));
+    if (facts.length) d.insertAdjacentHTML('afterend', `<div class="pills">${facts.map((f, i) => `<span class="pill" style="animation-delay:${i * 90}ms">${f}</span>`).join('')}</div>`);
+    el.classList.remove('on'); el.classList.add('done');
+  }
+}
+function endActivity() {
+  if (!activity) return;
+  clearTimeout(activity.slow);
+  const c = activity.counts, secs = Math.round((Date.now() - started) / 1000);
+  const used = c.searches + c.pages > 0;
+  const line = used ? `Checked ${c.pages} live page${c.pages === 1 ? '' : 's'} across ${Math.max(c.retailers.size, 1)} retailer${c.retailers.size > 1 ? 's' : ''} · ${secs}s` : '';
+  activity.outerHTML = line ? `<div class="summary">${line}</div>` : '';
+  activity = null;
+}
+
+/* ---------- basket ---------- */
+function renderBasket(b) {
+  basket = b;
+  const cur = b.currency, items = b.items || [];
+  const pct = b.budget ? Math.min(100, 100 * (b.total || 0) / b.budget) : 0;
+  const node = add(`<div class="card"><span class="label">${esc(b.title || 'For you')}</span>
+    <div class="bhead"><div class="total">${money(b.total, cur)}</div>${b.budget ? `<div>of ${money(b.budget, cur)}</div>` : ''}</div>
+    ${b.budget ? '<div class="bar"><i></i></div>' : ''}
+    ${b.savings > 0 ? `<div class="savings">You save ${money(b.savings, cur)} versus regular prices</div>` : '<div style="height:8px"></div>'}
+    ${items.map((it, i) => `<div class="item" style="animation-delay:${i * 80}ms">
+      <div class="tile">${esc((it.brand || it.name || '·')[0])}</div><div>
+      <span class="tag ${it.role === 'primary' ? '' : 'alt'}">${esc(it.label || (it.role === 'primary' ? 'BEST FIT' : 'ALTERNATIVE'))}</span>
+      <div class="label">${esc(it.brand)}</div><div class="name">${esc(it.name)}</div>
+      <div class="meta">${esc([it.shade, it.meta].filter(Boolean).join(' · '))}</div>
+      <div class="price">${money(it.price, cur)}${it.regular_price > it.price ? `<s>${money(it.regular_price, cur)}</s><b>−${esc(it.discount_pct)}%</b>` : ''}</div>
+      <div class="reason">${esc(it.reason)}</div>
+      ${(it.evidence || []).map(ev => `<div class="ev"><span class="src ${/web/i.test(ev.source) ? 'web' : ''}">${esc(ev.source)}</span><span>${esc(ev.text)}</span></div>`).join('')}
+      <div class="foot">${esc([it.retailer, it.checked].filter(Boolean).join(' · '))}${it.availability ? ` · <span class="warn">${esc(it.availability)}</span>` : ''}</div>
+      </div></div>`).join('')}
+    ${(b.excluded || []).length ? `<div class="excl"><span class="label">What I left out</span>${b.excluded.map(x => `<div class="ev"><span class="src ${/web/i.test(x.source) ? 'web' : ''}">${esc(x.source || 'Brain')}</span><span><strong style="font-weight:400;color:var(--ink)">${esc(x.name)}</strong> — ${esc(x.why)}</span></div>`).join('')}</div>` : ''}
+    <div style="height:18px"></div><button class="cta" id="review">Review shopping plan</button><button class="cta ghost" id="change">Change something</button></div>`);
+  requestAnimationFrame(() => { const bar = node.querySelector('.bar i'); if (bar) bar.style.width = pct + '%'; });
+  node.querySelector('#review').onclick = approvalSheet;
+  node.querySelector('#change').onclick = () => $('#input').focus();
+}
+
+function openSheet(html) { sheet.innerHTML = html; sheet.classList.add('open'); scrim.classList.add('open'); }
+function closeSheet() { sheet.classList.remove('open'); scrim.classList.remove('open'); }
+scrim.onclick = closeSheet;
+
+function approvalSheet() {
+  const primary = (basket.items || []).filter(i => i.role === 'primary');
+  const picks = primary.length ? primary : (basket.items || []).slice(0, 1);
+  const total = picks.reduce((s, i) => s + Number(i.price || 0), 0);
+  openSheet(`<span class="label">Your plan</span><h2>Ready when you are.</h2><p>Nothing is purchased until you say so.</p>
+    <div style="margin:18px 0">${picks.map(i => `<div class="buy"><span>${esc(i.brand)} ${esc(i.name)}</span><span>${money(i.price, basket.currency)}</span></div>`).join('')}
+    <div class="buy"><span class="label">Total</span><span>${money(total, basket.currency)}</span></div></div>
+    <button class="cta" id="approve">Approve plan</button><button class="cta ghost" id="notyet">Not yet</button>`);
+  $('#notyet').onclick = closeSheet;
+  $('#approve').onclick = async () => {
+    $('#approve').disabled = true; $('#approve').textContent = 'Preparing';
+    const names = picks.map(i => `${i.brand} ${i.name} from ${i.retailer} at ${money(i.price, basket.currency)}`).join('; ');
+    closeSheet();
+    await send(`Yes, I approve. Please prepare the plan for: ${names}.`, true, picks);
+  };
+}
+
+function planCard(picks) {
+  const total = picks.reduce((s, i) => s + Number(i.price || 0), 0), saved = picks.reduce((s, i) => s + Math.max(0, Number(i.regular_price || i.price) - Number(i.price)), 0);
+  add(`<div class="card"><span class="label" style="display:flex;gap:6px;align-items:center">${SPARKLE} Approved</span><h2 style="margin-top:6px">Your plan is ready.</h2>
+    ${picks.map(i => `<a class="buy" href="${safeUrl(i.url)}" target="_blank" rel="noopener"><span>${esc(i.brand)} ${esc(i.name)}<br><span class="meta">${money(i.price, basket.currency)}</span></span><span>Buy at ${esc(i.retailer)} ↗</span></a>`).join('')}
+    <div class="buy"><span class="label">Total</span><span>${money(total, basket.currency)}${saved > 0 ? ` · saved ${money(saved, basket.currency)}` : ''}</span></div></div>`);
+}
+
+function memoryPill(text) {
+  add(`<div class="memory"><span class="chip">${SPARKLE} I'll remember that</span><p>${esc(text)}</p></div>`);
+  const p = $('#profileBtn'); p.classList.remove('pulse'); void p.offsetWidth; p.classList.add('pulse');
+}
+
+/* ---------- chat ---------- */
+async function send(text, approved = false, picks = null) {
+  if (busy || !text.trim()) return;
+  busy = true;
+  add(`<div class="msg user">${esc(approved ? 'Approve plan' : text)}</div>`);
+  startActivity();
+  try {
+    const replay = new URLSearchParams(location.search).has('replay');
+    const res = await fetch('/chat', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: text, approved, replay})});
+    const data = await res.json();
+    endActivity();
+    const reply = data.reply || '';
+    const m = reply.match(/```basket\s*([\s\S]*?)```/);
+    const prose = reply.replace(/```basket[\s\S]*?```/, '').trim();
+    if (prose) add(`<div class="msg agent"><div class="avatar">gb</div><div class="bubble">${md(prose)}</div></div>`);
+    if (m) { try { renderBasket(JSON.parse(m[1])); } catch (e) { console.warn('basket parse', e); } }
+    if (approved && picks) planCard(picks);
+  } catch (e) {
+    endActivity();
+    add(`<div class="msg agent"><div class="avatar">gb</div><div class="bubble"><p>I lost my connection for a moment. Please try again.</p></div></div>`);
+  }
+  busy = false;
+}
+
+$('#form').onsubmit = e => { e.preventDefault(); const i = $('#input'); const v = i.value; i.value = ''; send(v); };
+$('#homeBtn').onclick = home;
+$('#profileBtn').onclick = async () => {
+  openSheet(`<span class="label">Your beauty profile</span><h2>What I know about you</h2><div id="prof"><div class="skeleton"></div><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:60%"></div></div>`);
+  try {
+    const p = await (await fetch('/profile')).json();
+    $('#prof').innerHTML = `<div class="prov"><span class="label">● You told me</span><pre>${esc(p.told_me)}</pre></div>
+      <div class="prov"><span class="label">◐ I noticed</span><pre>${esc(p.observed)}</pre></div>
+      <p style="margin-top:22px;font-size:13px">You can correct anything here. Just tell me.</p>`;
+  } catch { $('#prof').textContent = 'Your profile is unavailable right now.'; }
+};
+
+(function listen() {
+  const es = new EventSource('/events');
+  es.onmessage = m => { try { onEvent(JSON.parse(m.data)); } catch {} };
+  es.onerror = () => { es.close(); setTimeout(listen, 2000); };
+})();
+home();
+</script>
+</body>
+</html>
