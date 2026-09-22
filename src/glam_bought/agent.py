@@ -62,6 +62,10 @@ APPROVAL = re.compile(r"^\s*(yes|yep|approve|approved|go ahead|do it|proceed|con
 
 
 def build_agent() -> Agent:
+    import logging
+
+    for noisy in ("httpx", "httpcore", "mcp"):  # request logs carry the Bright Data token
+        logging.getLogger(noisy).setLevel(logging.WARNING)
     return Agent(
         model=config.get_model(),
         system_prompt=SYSTEM_PROMPT,
@@ -76,7 +80,7 @@ def ask(agent: Agent, message: str, approved: bool | None = None) -> str:
     """One turn. `approved` comes from the UI's Approve button; the CLI infers it from the text."""
     if approved is None:
         approved = bool(APPROVAL.match(message))
-    return str(agent(message, user_approved=approved))
+    return str(agent(message, invocation_state={"user_approved": approved}))
 
 
 def main() -> None:
