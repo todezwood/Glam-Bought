@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 
-from . import config, events, gcal, memory, oauth
+from . import config, events, gcal, hooks, memory, oauth
 from .agent import ask, build_agent
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -90,10 +90,23 @@ def _tile(body: ChatIn) -> dict | None:
     return json.loads(TILES.read_text()).get(body.message.strip())
 
 
+def _quiet(fn, *args):
+    """Run a warm-up; a failure only means the next turn fetches for itself."""
+    try:
+        fn(*args)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 async def _serve_tile(job_id: str, body: ChatIn, tile: dict) -> None:
     """Answer a tile in seconds: replay its recorded activity, compressed, then its result with the
     real 'checked N min ago' age, and seed the conversation so Approve and follow-ups continue from it."""
     evs = tile.get("events", [])
+    # Warm what a follow-up will need while the recording plays: the ring and calendar readings
+    # (seconds, awaited below) and the profile recall (a Cognee query, left to finish on its own).
+    warm = [asyncio.create_task(asyncio.to_thread(_quiet, hooks._context, kind)) for kind in ("ring", "calendar")]
+    if hooks._profile_cache is None:
+        asyncio.create_task(asyncio.to_thread(_quiet, hooks.MemoryHook.warm_profile))
     span = max(evs[-1]["ts"] - evs[0]["ts"], 1.0) if evs else 1.0
     prev = evs[0]["ts"] if evs else 0
     for ev in evs:
@@ -108,6 +121,13 @@ async def _serve_tile(job_id: str, body: ChatIn, tile: dict) -> None:
     ag = await asyncio.to_thread(agent, body.session)
     ag.messages.extend([{"role": "user", "content": [{"text": body.message}]},
                         {"role": "assistant", "content": [{"text": result["reply"]}]}])
+    # A follow-up carries the context of the request that produced the basket: seed it with the
+    # readings this process holds (a refine fetches, and shows it, only if there are none).
+    await asyncio.gather(*warm)
+    start = next((ev for ev in evs if ev["type"] == "turn_start"), {})
+    ag.state.set("context", {"request": body.message, "headline": start.get("headline", ""), "intent": "new_request",
+                             "market": "", "ring": hooks.cached_context("ring"), "calendar": hooks.cached_context("calendar"),
+                             "at": time.time()})
 
 
 async def _run(job_id: str, body: ChatIn) -> None:

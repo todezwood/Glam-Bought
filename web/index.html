@@ -60,6 +60,8 @@ h2{font:500 22px/1.15 var(--serif);color:var(--ink)}
 .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .pill{background:var(--lilac);color:var(--lav-deep);font-size:12px;padding:3px 10px;border-radius:999px;animation:rise .5s var(--ease) both}
 .summary{font-size:13px;text-align:center;color:var(--lav-deep);margin:10px 0}
+.card .hl{font:500 21px/1.2 var(--serif);color:var(--ink);margin:6px 0 4px}
+.card .hl:empty{display:none}
 /* basket */
 .bhead{display:flex;align-items:baseline;justify-content:space-between;margin-top:4px}
 .total{font:300 40px var(--serif);color:var(--ink);font-variant-numeric:tabular-nums}
@@ -215,59 +217,91 @@ function md(text) {
 }
 
 /* ---------- activity card ---------- */
-const STEPS = [['remember', 'Remembering you'], ['context', 'Checking your day'], ['shop', 'Shopping the web'], ['balance', 'Balancing your budget']];
+/* Rows are declared by the turn's `turn_start` event (only the steps that will really run), filled
+   in by tool events, and appended on the fly for anything undeclared: a memory note, the pickup
+   going on the calendar, a recording made before turn_start existed. */
+const TITLES = {remember: 'Remembering you', context: 'Checking your day', shop: 'Shopping the web', balance: 'Balancing your budget',
+                note: 'Noting that down', plan: 'Preparing your plan', calendar: 'Adding to your calendar', think: 'Thinking'};
+const NEXT_TEXT = {shop: 'Searching retailers', balance: 'Weighing the options', plan: 'Finishing up'};
+const rowHtml = (k, t) => `<div class="step" data-k="${k}"><div class="ring"></div><div><div class="t">${esc(t)}</div><div class="d"></div></div></div>`;
+const shopLine = c => {
+  let s = [...c.retailers].join(' · ') || 'Searching retailers';
+  if (c.pages) s += ` · ${c.pages} live page${c.pages > 1 ? 's' : ''} checked`;
+  if (c.saved) s += ` · ${c.saved} saved to your Brain`;
+  return s;
+};
 function startActivity() {
   started = Date.now();
-  activity = add(`<div class="card"><span class="label">Working on it</span>
-    ${STEPS.map(([k, t]) => `<div class="step" data-k="${k}"><div class="ring"></div><div><div class="t">${t}</div><div class="d"></div></div></div>`).join('')}</div>`);
-  activity.counts = {searches: 0, pages: 0, retailers: new Set(), inflight: {}};
+  activity = add(`<div class="card"><span class="label">Working on it</span><div class="hl"></div>${rowHtml('think', 'Reading your message')}</div>`);
+  activity.querySelector('.step').classList.add('on');
+  activity.counts = {searches: 0, pages: 0, saved: 0, retailers: new Set(), inflight: {}, shopped: false};
+  activity.intent = ''; activity.declared = false;
   activity.slow = setTimeout(() => { const s = activity?.querySelector('.step.on .d'); if (s && !s.textContent) s.textContent = 'Still looking. Good things take a minute.'; }, 20000);
+}
+function rowFor(k, title) {
+  const have = activity.querySelector(`.step[data-k="${k}"]`);
+  if (have) return have;
+  activity.querySelector('.step[data-k="think"]')?.remove();  // real work has begun
+  activity.insertAdjacentHTML('beforeend', rowHtml(k, title || TITLES[k] || 'Working'));
+  return activity.lastElementChild;
 }
 /* Events reach the page twice, over SSE and inside the job poll (the tunnel buffers SSE, so on the
    phone only the poll arrives in time): each is applied once, by its sequence number. */
 const seen = new Set();
-const NEXT_TEXT = {shop: 'Searching retailers', balance: 'Weighing the options'};
 function onEvent(e) {
   if (e.seq) { if (seen.has(e.seq)) return; seen.add(e.seq); }
   if (e.type === 'memory_write') return memoryPill(e.label);
-  if (!activity || !e.step) return;
-  const order = STEPS.map(s => s[0]), idx = order.indexOf(e.step === 'act' ? 'balance' : e.step);
-  activity.querySelectorAll('.step').forEach(el => {
-    if (order.indexOf(el.dataset.k) >= idx) return;
-    if (el.dataset.k === 'context' && !el.classList.contains('on') && !el.classList.contains('done')) { el.remove(); return; }
-    el.classList.remove('on'); el.classList.add('done');
+  if (!activity) return;
+  if (e.type === 'turn_start') {
+    activity.intent = e.intent || ''; activity.declared = (e.steps || []).length > 0;
+    activity.querySelector('.hl').textContent = e.headline || '';
+    if ((e.steps || []).length) for (const [k, t] of e.steps) rowFor(k, t);
+    else { const t = activity.querySelector('.step[data-k="think"] .t'); if (t) t.textContent = TITLES.think; }
+    return;
+  }
+  if (e.type === 'market_write') {
+    activity.counts.saved++;
+    const d = activity.querySelector('.step[data-k="shop"] .d'); if (d) d.textContent = shopLine(activity.counts);
+    return;
+  }
+  if (!e.step) return;
+  const el = rowFor(e.step, e.label), d = el.querySelector('.d'), c = activity.counts, k = e.step;
+  const rows = [...activity.querySelectorAll('.step')], idx = rows.indexOf(el);
+  rows.slice(0, idx).forEach(s => {  // work has moved past these
+    if (c.inflight[s.dataset.k]) return;
+    if (s.dataset.k === 'shop' && !c.shopped) { s.querySelector('.t').textContent = 'Shopping your shelf'; s.querySelector('.d').textContent = 'From the Beauty Brain, no web call needed'; }
+    s.classList.remove('on'); s.classList.add('done');
   });
-  const el = activity.querySelector(`.step[data-k="${order[idx]}"]`); if (!el) return;
-  const d = el.querySelector('.d'), c = activity.counts, k = order[idx];
   if (e.type === 'tool_start') {
     el.classList.add('on'); el.classList.remove('done');
     c.inflight[k] = (c.inflight[k] || 0) + 1;
-    // a later step spinning now was only the guess below; the real work is here
-    activity.querySelectorAll('.step.on').forEach(s => { if (order.indexOf(s.dataset.k) > idx) { s.classList.remove('on'); const sd = s.querySelector('.d'); if (Object.values(NEXT_TEXT).includes(sd.textContent)) sd.textContent = ''; } });
-    if (e.step === 'context' && !d.textContent) d.textContent = 'Ring · Calendar';
+    // a later row spinning now was only the guess below; the real work is here
+    rows.slice(idx + 1).forEach(s => { if (s.classList.contains('on') && !c.inflight[s.dataset.k]) { s.classList.remove('on'); const sd = s.querySelector('.d'); if (Object.values(NEXT_TEXT).includes(sd.textContent)) sd.textContent = ''; } });
+    if (k === 'context' && !d.textContent) d.textContent = e.detail || 'Ring · Calendar';  // which source is really being read
     if (e.tool === 'search_engine' || e.tool === 'web_data_amazon_product_search') c.searches++;
     if (e.tool === 'scrape_as_markdown' || e.tool === 'web_data_amazon_product') { c.pages++; const m = /https?:\/\/(?:www\.)?([^./]+)/.exec(e.input?.url || ''); if (m) c.retailers.add(m[1][0].toUpperCase() + m[1].slice(1)); }
-    if (e.step === 'shop') d.textContent = [...c.retailers].join(' · ') || 'Searching retailers' , d.textContent += c.pages ? ` · ${c.pages} live page${c.pages > 1 ? 's' : ''} checked` : '';
+    if (k === 'shop') { c.shopped = true; d.textContent = shopLine(c); }
     if (e.tool === 'rank_products') d.textContent = `Comparing ${(e.input?.candidates || []).length} offers in a secure sandbox`;
-    if (e.tool === 'create_shopping_plan') d.textContent = 'Preparing your plan';
-    if (e.tool === 'add_calendar_event') d.textContent = 'Adding the pickup to your calendar';
+    if (e.tool === 'add_calendar_event' && e.input?.title) d.textContent = e.input.title;
   }
   if (e.type === 'tool_end') {
     c.inflight[k] = Math.max(0, (c.inflight[k] || 0) - 1);
-    if (e.step === 'context' && e.detail) d.textContent = d.textContent === 'Ring · Calendar' ? e.detail : (d.textContent ? d.textContent + ' · ' : '') + e.detail;
-    if (e.step === 'remember' && e.detail && !el.querySelector('.pills')) {
+    if (k === 'context' && e.detail && !d.textContent.includes(e.detail)) d.textContent = /^(Ring|Calendar|Ring · Calendar)?$/.test(d.textContent) ? e.detail : d.textContent + ' · ' + e.detail;
+    if (k === 'remember' && e.detail && !el.querySelector('.pills')) {
       const facts = ['Dry', 'Sensitive', 'Dark Winter', 'Fragrance-free', 'Natural finish', 'No matte', 'Sephora'].filter(f => new RegExp(f.replace('-', '.?'), 'i').test(e.detail));
       if (facts.length) d.insertAdjacentHTML('afterend', `<div class="pills">${facts.map((f, i) => `<span class="pill" style="animation-delay:${i * 90}ms">${f}</span>`).join('')}</div>`);
     }
     if (!c.inflight[k]) { el.classList.remove('on'); el.classList.add('done'); }  // the ring fills as soon as its last tool returns
     /* Between tools the model is thinking, sometimes for half a minute: keep a ring moving, on the
-       next step it has not reached yet (or the last one again, while it writes the basket). */
+       next declared step it has not reached yet (or the last one again, while it writes the reply). */
     if (!activity.querySelector('.step.on')) {
       const steps = [...activity.querySelectorAll('.step')];
-      const next = steps.find(s => !s.classList.contains('done') && (s.dataset.k !== 'context' || s.querySelector('.d').textContent));
-      const target = next || steps[steps.length - 1], nd = target.querySelector('.d');
-      if (!next) nd.textContent = e.step === 'act' ? 'Finishing up' : 'Writing your picks'; else if (!nd.textContent) nd.textContent = NEXT_TEXT[target.dataset.k] || '';
-      target.classList.remove('done'); target.classList.add('on');
+      const next = steps.find(s => !s.classList.contains('done') && s.dataset.k !== 'think');
+      if (next) { const nd = next.querySelector('.d'); if (!nd.textContent) nd.textContent = NEXT_TEXT[next.dataset.k] || ''; next.classList.add('on'); }
+      else if (activity.declared || ['balance', 'plan', 'calendar', 'note'].includes(k)) {  // every step is done: the reply is being written
+        const last = steps[steps.length - 1]; last.querySelector('.d').textContent = ['plan', 'calendar', 'note'].includes(k) ? 'Finishing up' : 'Writing your picks';
+        last.classList.remove('done'); last.classList.add('on');
+      } else activity.insertAdjacentHTML('beforeend', rowHtml('think', TITLES.think).replace('class="step"', 'class="step on"'));  // a turn with no declared rows, between steps
     }
   }
 }
@@ -275,8 +309,11 @@ function endActivity() {
   if (!activity) return;
   clearTimeout(activity.slow);
   const c = activity.counts, secs = Math.round((Date.now() - started) / 1000);
+  const hl = activity.querySelector('.hl')?.textContent || '';
   const used = c.searches + c.pages > 0;
-  const line = used ? `Checked ${c.pages} live page${c.pages === 1 ? '' : 's'} across ${Math.max(c.retailers.size, 1)} retailer${c.retailers.size > 1 ? 's' : ''} · ${secs}s` : '';
+  let line = used ? `Checked ${c.pages} live page${c.pages === 1 ? '' : 's'} across ${Math.max(c.retailers.size, 1)} retailer${c.retailers.size > 1 ? 's' : ''} · ${secs}s` : '';
+  if (!line && hl && activity.intent && activity.intent !== 'question') line = `${secs}s`;
+  if (line && hl) line = `${esc(hl)} · ${line}`;
   activity.outerHTML = line ? `<div class="summary">${line}</div>` : '';
   activity = null;
 }

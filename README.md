@@ -24,7 +24,8 @@ personal sources (notes, receipts, order emails)      public web (Bright Data)
 ```
 
 - **Memory:** every fact carries provenance (`told_me` / `observed` / `inferred`) and every scraped page carries `source_url` + `retrieved_at`.
-- **Two ways in from Bright Data:** the agent calls Bright Data's MCP tools live (Amazon, ~10 s each), and Bright Data's out-of-the-box **Sephora scraper** (Datasets API, ~100 s a page) is run ahead of time by `scripts/seed_retail.py` (also Ulta and Olive Young, from Angela's source table), which remembers price, sale price, finish, coverage, fragrance-free and every shade's stock into the `market` dataset. `MemoryHook` recalls the relevant market facts before each turn, so the agent answers with Sephora shade and stock evidence without waiting on a slow scrape.
+- **Two ways in from Bright Data:** the agent calls Bright Data's MCP tools live (Amazon, ~10 s each), and Bright Data's out-of-the-box **Sephora scraper** (Datasets API, ~100 s a page) is run ahead of time by `scripts/seed_retail.py` (also Ulta and Olive Young, from Angela's source table), which remembers price, sale price, finish, coverage, fragrance-free and every shade's stock into the `market` dataset. `MemoryHook` recalls the relevant market facts before a shopping turn, so the agent answers with Sephora shade and stock evidence without waiting on a slow scrape.
+- **Only what the turn needs:** a fast Haiku call (`intent.py`, ~1 s, falls back to a heuristic) reads each message as a new request, a change to the basket, an approval or a question, and names it for the activity card ("Sunscreen for Switzerland"). A new request fetches the ring, the calendar and the shelf and snapshots them into the session; a follow-up reuses that snapshot and goes straight to the retailer, so the card shows only the steps that actually run.
 - **Reasoning across sources:** each recommendation clause is badged **Brain** or **Live web**. Example from a real run: a foundation on sale was excluded because the live ingredient list showed alcohol denat, which the user's profile says to avoid.
 - **Action:** `create_shopping_plan` is cancelled by a Strands `SteeringHook` unless the user approved this turn. Approval writes a purchase-ready plan and remembers the purchase.
 - **Sandbox:** `optimizer/rank.py` dedupes, computes discounts, eliminates hard-constraint violators and ranks, inside `docker run --network none`.
@@ -50,6 +51,7 @@ Ring + calendar: fill `OURA_*` / `GOOGLE_*` in `.env`, then connect once on the 
 |---|---|
 | `src/glam_bought/agent.py` | System prompt, tool wiring, CLI |
 | `src/glam_bought/hooks.py` | MemoryHook, MarketMemoryHook, AuditHook, SteeringHook |
+| `src/glam_bought/intent.py` | Turn router: intent, context sources and card headline per message (Haiku, fail-open) |
 | `src/glam_bought/memory.py` | Cognee remember / recall tools |
 | `src/glam_bought/web.py` | Bright Data MCP client, tool filter, result compaction |
 | `src/glam_bought/datasets.py` | Bright Data Datasets API (Sephora / Ulta scrapers): trigger → progress → snapshot, record compaction |

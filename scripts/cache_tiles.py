@@ -62,7 +62,7 @@ def main():
             print("SKIP", sid, "no basket:", result.get("reply", "")[:120])
             continue
         evs = [e for e in map(json.loads, AUDIT.read_text().splitlines())
-               if e.get("session") in (sid, sid + "b") and e["ts"] >= j.get("start", 0) and e["type"] in ("tool_start", "tool_end", "market_write")]
+               if e.get("session") in (sid, sid + "b") and e["ts"] >= j.get("start", 0) and e["type"] in ("turn_start", "tool_start", "tool_end", "market_write")]
         tiles[j["message"].strip()] = {"result": result, "events": evs, "ts": evs[-1]["ts"] if evs else time.time()}
         print("cached", sid, len(evs), "events")
     OUT.write_text(json.dumps(tiles))

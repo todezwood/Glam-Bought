@@ -15,6 +15,9 @@ dependencies = [
     "botocore[crt]>=1.43.99",
 ]
 
+[dependency-groups]
+dev = ["pytest>=8"]
+
 [project.scripts]
 glam-bought = "glam_bought:main"
 

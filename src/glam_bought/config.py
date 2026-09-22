@@ -75,3 +75,35 @@ def get_model():
         model_id=os.getenv("MODEL_ID", "claude-sonnet-5"),
         max_tokens=8192,  # a basket turn with three candidates overran 4096 (tool input + prose + cards)
     )
+
+
+# A small, fast model for routing each message (intent + headline for the activity card). Same
+# credentials as the main model; built once so its time budget is not spent on connection setup.
+_classifier_client = None
+
+
+def classifier_call(system: str, user: str, timeout: float = 3.0, max_tokens: int = 200) -> str:
+    """One short completion from the fast model; raises on any failure (the caller falls back)."""
+    global _classifier_client
+    if MODEL_PROVIDER == "bedrock":
+        import boto3
+        from botocore.config import Config
+
+        if _classifier_client is None:
+            _classifier_client = boto3.Session().client(
+                "bedrock-runtime", region_name=os.getenv("AWS_REGION", "us-east-1"),
+                config=Config(connect_timeout=2, read_timeout=timeout, retries={"max_attempts": 0}))
+        out = _classifier_client.converse(
+            modelId=os.getenv("CLASSIFIER_BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0"),
+            system=[{"text": system}], messages=[{"role": "user", "content": [{"text": user}]}],
+            inferenceConfig={"maxTokens": max_tokens})
+        return out["output"]["message"]["content"][0]["text"]
+
+    import anthropic
+
+    if _classifier_client is None:
+        _classifier_client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    response = _classifier_client.with_options(timeout=timeout, max_retries=0).messages.create(
+        model=os.getenv("CLASSIFIER_MODEL_ID", "claude-haiku-4-5"), max_tokens=max_tokens,
+        system=system, messages=[{"role": "user", "content": user}])
+    return next((b.text for b in response.content if b.type == "text"), "")

@@ -1,10 +1,9 @@
 """GlamBought: a personal beauty shopping agent. Bright Data -> Cognee -> Strands, Docker to help."""
-import re
 import sys
 
 from strands import Agent
 
-from . import config, web
+from . import config, intent, web
 from .actions import create_shopping_plan
 from .gcal import add_calendar_event, check_calendar
 from .hooks import AuditHook, MarketMemoryHook, MemoryHook, SteeringHook
@@ -32,8 +31,10 @@ item is not on sale, so regular_price equals price and discount_pct is 0.
 2. CONTEXT. Today's date is given below; never guess the date or the weekday. For a SHOPPING \
 request her ring reading and her upcoming calendar are already fetched and injected below as \
 <ring> and <calendar>: use them directly and do not call check_wellness or check_calendar unless \
-a block is missing or you need a longer window. Never call them for a statement about a product or \
-a reaction: just remember it. The calendar gives the occasion and the deadline: products must be in \
+a block is missing or you need a longer window. On a follow-up that adjusts the basket they are \
+carried over from the request that produced it, so they are the readings you already reasoned \
+with. Never call them for a statement about a product or a reaction: just remember it. A <turn> \
+block, when present, says what kind of message this is; follow it. The calendar gives the occasion and the deadline: products must be in \
 hand the day before, so in-store pickup beats delivery. If the calendar does not show the occasion \
 the user named, trust the user and do not mention the calendar. The ring gives the last few nights: \
 short sleep, low readiness or a stressful day mean dehydrated, dull, puffy, reactive skin, so favour \
@@ -57,8 +58,10 @@ the Bright Data tools within a strict budget: ONE web_data_amazon_product_search
 then web_data_amazon_product on the 3 most promising product URLs, all in ONE parallel batch, for \
 today's price, stock, delivery, rating and the full ingredient list. Never call search_engine: for \
 in-store pickup use the Sephora or Ulta url from <market_recall>, otherwise the Amazon url. Do not \
-exceed this budget. Do not name products from your own memory. Every result carries retrieved_at \
-and is saved to the Beauty Brain's market dataset automatically.
+exceed this budget. On a follow-up that changes one item, the budget applies to the replacement \
+only: no research at all for items the user did not mention. Do not name products from your own \
+memory. Every result carries retrieved_at and is saved to the Beauty Brain's market dataset \
+automatically.
 5. COMPUTE IN THE SANDBOX. Pass every candidate offer and the constraints to rank_products in \
 ONE call, right after research. Never do price math, dedupe or filtering yourself. Keep the call \
 small: no ingredient lists (they are filled in from each url automatically), no descriptions.
@@ -104,7 +107,7 @@ most 3 items, at most 3 evidence lines per item, at most 2 excluded entries, eve
 "why" and evidence "text" under 15 words. Keep the prose above the block to at most three short \
 sentences: the headline pick, what you ruled out and why, one caveat. The cards carry the detail."""
 
-APPROVAL = re.compile(r"^\s*(yes|yep|approve|approved|go ahead|do it|proceed|confirm|looks good)\b", re.I)
+APPROVAL = intent.APPROVAL
 
 
 def build_agent() -> Agent:
