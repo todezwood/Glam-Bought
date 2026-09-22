@@ -12,6 +12,7 @@ dependencies = [
     "mcp>=2.1.1",
     "fastapi>=0.141.1",
     "uvicorn>=0.53.0",
+    "botocore[crt]>=1.43.99",
 ]
 
 [project.scripts]
