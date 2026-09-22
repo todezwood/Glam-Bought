@@ -14,6 +14,7 @@
 
 **0:40 The request (tap 'A foundation for dinner').** Read the request aloud. While it runs, narrate the activity card:
 - *Remembering you* — "Cognee recall, injected before every turn. She never repeats herself."
+- *Remembering you* — also add: "Her brain already holds Sephora's shelf: Bright Data's Sephora scraper filled the market dataset with prices, finishes and which shades are in stock, before we walked up."
 - *Shopping the web* — "Bright Data's Amazon scrapers, called by the Strands agent itself: a candidate search, then four live product pages with full ingredient lists. Every scrape is written back into Cognee's market dataset with URL and timestamp."
 - *Balancing your budget* — "Deterministic ranking runs in a Docker sandbox with no network. The model never does price math."
 
@@ -27,7 +28,7 @@
 
 ## Stack, one line each (for questions)
 - **Cognee Cloud** — `remember`/`recall`; datasets `beauty_profile`, `purchases`, `market`; provenance tags on every fact.
-- **Bright Data** — hosted MCP server, pro mode; `web_data_amazon_product_search`, `web_data_amazon_product`, `search_engine`.
+- **Bright Data** — two ways in. Live: hosted MCP server, pro mode; `web_data_amazon_product_search`, `web_data_amazon_product`, `search_engine`. Seeded: the out-of-the-box **Sephora, Ulta and Olive Young scrapers** from Angela's source table (Datasets API) collected base-makeup pages with every shade's stock into Cognee's market dataset before the demo; the Strands MemoryHook recalls the relevant ones for each request.
 - **Strands Agents** — one agent, five tools, three hooks: MemoryHook (recall before every turn), MarketMemoryHook (Bright Data → Cognee), SteeringHook (approval gate). Bedrock-ready: one `.env` line.
 - **Docker** — `optimizer/rank.py` runs in `python:3.12-alpine`, `--network none`, 256 MB.
 
