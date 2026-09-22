@@ -4,12 +4,11 @@ import sys
 
 from strands import Agent
 
-from . import config
+from . import config, web
 from .actions import create_shopping_plan
-from .hooks import AuditHook, MemoryHook, SteeringHook
+from .hooks import AuditHook, MarketMemoryHook, MemoryHook, SteeringHook
 from .memory import recall_beauty_memory, remember_beauty_fact
 from .sandbox import rank_products
-from .web import refresh_market, search_beauty_web
 
 SYSTEM_PROMPT = """You are GlamBought, a personal beauty shopping agent. Voice: a calm, expert \
 concierge. Warm, precise, brief. No emoji, no exclamation marks.
@@ -23,10 +22,12 @@ How you work on a shopping request:
 Never make the user repeat what they have already told you.
 2. Separate HARD constraints (budget, excluded ingredients, disliked finishes, buy-today) from \
 SOFT preferences (brands, retailers, sale). Hard constraints eliminate; soft ones rank.
-3. RESEARCH LIVE. Use search_beauty_web to discover candidates (search broadly, do not name \
-products from your own memory), then refresh_market on at most 4 product pages to get current \
-price, sale price, stock, finish, shade and the ingredient list. Call tools in parallel when \
-they are independent.
+3. RESEARCH LIVE with the Bright Data tools. Use search_engine to discover candidates (search \
+broadly, e.g. "site:sephora.com/product natural finish foundation dry skin"; do not name \
+products from your own memory), then scrape_as_markdown on at most 4 product pages to get \
+current price, sale price, stock, finish, shade and the ingredient list. Each scrape returns \
+source_url and retrieved_at; it is also saved to the Beauty Brain's market dataset automatically. \
+Call tools in parallel when they are independent.
 4. COMPUTE IN THE SANDBOX. Pass every candidate offer and the constraints to rank_products. \
 Never do price math, dedupe or filtering yourself.
 5. RECOMMEND one primary pick and up to two alternatives. Explain why in plain language, and \
@@ -58,9 +59,9 @@ def build_agent() -> Agent:
     return Agent(
         model=config.get_model(),
         system_prompt=SYSTEM_PROMPT,
-        tools=[recall_beauty_memory, remember_beauty_fact, search_beauty_web, refresh_market,
-               rank_products, create_shopping_plan],
-        hooks=[MemoryHook(SYSTEM_PROMPT), AuditHook(), SteeringHook()],
+        tools=[recall_beauty_memory, remember_beauty_fact, rank_products, create_shopping_plan,
+               *web.tools()],
+        hooks=[MemoryHook(SYSTEM_PROMPT), MarketMemoryHook(), AuditHook(), SteeringHook()],
         callback_handler=None,
     )
 

@@ -187,8 +187,8 @@ function onEvent(e) {
   const d = el.querySelector('.d'), c = activity.counts;
   if (e.type === 'tool_start') {
     el.classList.add('on'); el.classList.remove('done');
-    if (e.tool === 'search_beauty_web') c.searches++;
-    if (e.tool === 'refresh_market') { c.pages++; const m = /https?:\/\/(?:www\.)?([^./]+)/.exec(e.input?.url || ''); if (m) c.retailers.add(m[1][0].toUpperCase() + m[1].slice(1)); }
+    if (e.tool === 'search_engine') c.searches++;
+    if (e.tool === 'scrape_as_markdown' || /^web_data_/.test(e.tool || '')) { c.pages++; const m = /https?:\/\/(?:www\.)?([^./]+)/.exec(e.input?.url || ''); if (m) c.retailers.add(m[1][0].toUpperCase() + m[1].slice(1)); }
     if (e.step === 'shop') d.textContent = [...c.retailers].join(' · ') || 'Searching retailers' , d.textContent += c.pages ? ` · ${c.pages} live page${c.pages > 1 ? 's' : ''} checked` : '';
     if (e.tool === 'rank_products') d.textContent = `Comparing ${(e.input?.candidates || []).length} offers in a secure sandbox`;
     if (e.tool === 'create_shopping_plan') d.textContent = 'Preparing your plan';

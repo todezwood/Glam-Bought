@@ -30,7 +30,7 @@ for i, url in enumerate(urls[:MAX_PAGES], 1):
     t = time.time()
     try:
         page = web.trim_product_page(web.call("scrape_as_markdown", {"url": url}))
-        memory.remember(f"[source: live_web] [source_url: {url}] [retrieved_at: {web._now()}]\n{page}", config.DS_MARKET)
+        memory.remember(f"[source: live_web] [source_url: {url}] [retrieved_at: {web.now()}]\n{page}", config.DS_MARKET)
         print(f"[{i}/{min(len(urls), MAX_PAGES)}] {time.time() - t:.0f}s  {url}")
     except Exception as e:
         print(f"[{i}] FAILED {url}: {e}")

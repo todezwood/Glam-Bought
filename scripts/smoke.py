@@ -29,8 +29,7 @@ def cognee():
 def brightdata():
     from glam_bought import web
 
-    tools = web.client().list_tools_sync()
-    print("tools:", [t.tool_name for t in tools])
+    print("allowed tools:", [t.tool_name for t in web.tools()])
     timed("search_engine", lambda: web.call("search_engine", {"query": "fragrance-free natural finish foundation dry skin sephora", "engine": "google"}))
     timed("scrape_as_markdown", lambda: web.trim_product_page(web.call(
         "scrape_as_markdown", {"url": "https://www.sephora.com/product/ilia-super-serum-skin-tint-spf-40-P455926"})))
