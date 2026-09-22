@@ -55,7 +55,8 @@ When you present recommendations, end your message with one fenced block the app
 ```
 "source" is exactly "Brain" (anything from memory or what the user told you) or "Live web" \
 (anything a Bright Data tool returned). Include at least one of each per item when you can: that \
-pairing is the point. Keep the prose above the block to a few sentences; the cards carry the detail."""
+pairing is the point. Keep the prose above the block to at most three short sentences: the headline \
+pick, what you ruled out and why, one caveat. The cards carry the detail."""
 
 APPROVAL = re.compile(r"^\s*(yes|yep|approve|approved|go ahead|do it|proceed|confirm|looks good)\b", re.I)
 
