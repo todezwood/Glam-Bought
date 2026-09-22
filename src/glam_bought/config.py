@@ -33,7 +33,7 @@ SEED_DIR = ROOT / "seed"
 
 # Cognee datasets
 DS_PROFILE = "beauty_profile_v3"  # v1: placeholder persona; v2: Angela in San Francisco; v3: Angela in Taiwan (Cognee forget() is unreliable, so old versions are simply no longer recalled)
-DS_PURCHASES = "purchases"
+DS_PURCHASES = "purchases_v2"  # v1 was polluted by rehearsal approvals (fake "already chose" purchases); forget() is unreliable
 DS_MARKET = "market_v2"  # v1 holds ~220 shell rows from the first Sephora seed; Cognee Cloud forget() timed out, so it is simply no longer recalled
 DS_WELLNESS = "wellness"
 ALL_DATASETS = [DS_PROFILE, DS_PURCHASES, DS_MARKET, DS_WELLNESS]

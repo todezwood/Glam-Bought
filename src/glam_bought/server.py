@@ -66,18 +66,21 @@ async def chat(body: ChatIn):
                     and job["message"] == body.message and job["approved"] == body.approved):
                 return {"job": job_id, "queued": True}
     job_id = uuid.uuid4().hex[:12]
-    _jobs[job_id] = {"status": "running", "queued": lock.locked(), "ts": time.time(),
+    _jobs[job_id] = {"status": "running", "queued": lock.locked(), "ts": time.time(), "seq0": events.last_seq(),
                      "session": body.session, "message": body.message, "approved": body.approved}
     asyncio.create_task(_run(job_id, body))
     return {"job": job_id, "queued": _jobs[job_id]["queued"]}
 
 
 @app.get("/chat/{job_id}")
-async def chat_status(job_id: str):
+async def chat_status(job_id: str, since: int = 0):
+    """Job status plus this turn's activity events after `since`: the poll is how the activity card
+    is driven on the phone, because the tunnel buffers the SSE stream until the response ends."""
     job = _jobs.get(job_id)
     if not job:
         return JSONResponse({"error": "unknown job"}, status_code=404)
-    return {"status": job["status"], "queued": job.get("queued", False), "result": job.get("result")}
+    return {"status": job["status"], "queued": job.get("queued", False), "result": job.get("result"),
+            "events": events.since(job["session"], max(since, job.get("seq0", 0)))}
 
 
 def _tile(body: ChatIn) -> dict | None:

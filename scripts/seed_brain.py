@@ -2,6 +2,7 @@
 
     uv run python scripts/seed_brain.py            # everything
     uv run python scripts/seed_brain.py profile    # only the profile notes (after editing seed/profile.md)
+    uv run python scripts/seed_brain.py purchases  # only receipts + emails (after bumping DS_PURCHASES)
 """
 import sys
 import time
@@ -19,6 +20,8 @@ SOURCES = [
 
 if "profile" in sys.argv[1:]:
     SOURCES = [s for s in SOURCES if s[1] == config.DS_PROFILE]
+if "purchases" in sys.argv[1:]:
+    SOURCES = [s for s in SOURCES if s[1] == config.DS_PURCHASES]
 
 for path, dataset, source_type in SOURCES:
     provenance = "told_me" if source_type == "beauty_notes" else "observed"

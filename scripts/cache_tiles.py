@@ -2,6 +2,7 @@
 and save its result plus its activity events to cache/tiles.json (served by server._serve_tile).
 
     uv run python scripts/cache_tiles.py            # run the three shopping tiles, ~5 min, costs Bright Data credit
+    uv run python scripts/cache_tiles.py --only 1   # re-record tile 1 only; tiles 2 and 3 keep their recordings
     uv run python scripts/cache_tiles.py --collect JOBS.json   # gather runs already started ({name: {job, message}})
 """
 import json
@@ -33,13 +34,22 @@ def main():
     if "--collect" in sys.argv:
         jobs = json.loads(Path(sys.argv[sys.argv.index("--collect") + 1]).read_text())
     else:
-        # The server replays any tile message found in tiles.json, so an existing file must move
-        # aside before recording, or this would silently re-record the old runs.
+        # --only N re-records one tile and keeps the others (the server would replay the old
+        # recording, so that tile is dropped from tiles.json first; the previous file is kept aside).
+        only = int(sys.argv[sys.argv.index("--only") + 1]) if "--only" in sys.argv else None
+        kept = {}
         if OUT.exists():
-            OUT.rename(OUT.with_name("tiles.previous.json"))
+            kept = json.loads(OUT.read_text())
+            OUT.replace(OUT.with_name("tiles.previous.json"))
             print("moved the old tiles to cache/tiles.previous.json")
+        messages = tile_messages()
+        if only:
+            kept.pop(messages[only - 1].strip(), None)
+            OUT.write_text(json.dumps(kept))  # the other tiles keep answering while this one records
         jobs = {}
-        for i, m in enumerate(tile_messages()):
+        for i, m in enumerate(messages):
+            if only and i + 1 != only:
+                continue
             sid = f"tile{i + 1}"
             jobs[sid] = {"job": api("/chat", {"message": m, "session": sid})["job"], "message": m, "start": time.time()}
             print("started", sid, m[:60])

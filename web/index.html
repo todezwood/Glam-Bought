@@ -220,10 +220,15 @@ function startActivity() {
   started = Date.now();
   activity = add(`<div class="card"><span class="label">Working on it</span>
     ${STEPS.map(([k, t]) => `<div class="step" data-k="${k}"><div class="ring"></div><div><div class="t">${t}</div><div class="d"></div></div></div>`).join('')}</div>`);
-  activity.counts = {searches: 0, pages: 0, retailers: new Set(), ctx: {start: 0, end: 0}};
+  activity.counts = {searches: 0, pages: 0, retailers: new Set(), inflight: {}};
   activity.slow = setTimeout(() => { const s = activity?.querySelector('.step.on .d'); if (s && !s.textContent) s.textContent = 'Still looking. Good things take a minute.'; }, 20000);
 }
+/* Events reach the page twice, over SSE and inside the job poll (the tunnel buffers SSE, so on the
+   phone only the poll arrives in time): each is applied once, by its sequence number. */
+const seen = new Set();
+const NEXT_TEXT = {shop: 'Searching retailers', balance: 'Weighing the options'};
 function onEvent(e) {
+  if (e.seq) { if (seen.has(e.seq)) return; seen.add(e.seq); }
   if (e.type === 'memory_write') return memoryPill(e.label);
   if (!activity || !e.step) return;
   const order = STEPS.map(s => s[0]), idx = order.indexOf(e.step === 'act' ? 'balance' : e.step);
@@ -233,10 +238,13 @@ function onEvent(e) {
     el.classList.remove('on'); el.classList.add('done');
   });
   const el = activity.querySelector(`.step[data-k="${order[idx]}"]`); if (!el) return;
-  const d = el.querySelector('.d'), c = activity.counts;
+  const d = el.querySelector('.d'), c = activity.counts, k = order[idx];
   if (e.type === 'tool_start') {
     el.classList.add('on'); el.classList.remove('done');
-    if (e.step === 'context') { c.ctx.start++; if (!d.textContent) d.textContent = 'Ring · Calendar'; }
+    c.inflight[k] = (c.inflight[k] || 0) + 1;
+    // a later step spinning now was only the guess below; the real work is here
+    activity.querySelectorAll('.step.on').forEach(s => { if (order.indexOf(s.dataset.k) > idx) { s.classList.remove('on'); const sd = s.querySelector('.d'); if (Object.values(NEXT_TEXT).includes(sd.textContent)) sd.textContent = ''; } });
+    if (e.step === 'context' && !d.textContent) d.textContent = 'Ring · Calendar';
     if (e.tool === 'search_engine' || e.tool === 'web_data_amazon_product_search') c.searches++;
     if (e.tool === 'scrape_as_markdown' || e.tool === 'web_data_amazon_product') { c.pages++; const m = /https?:\/\/(?:www\.)?([^./]+)/.exec(e.input?.url || ''); if (m) c.retailers.add(m[1][0].toUpperCase() + m[1].slice(1)); }
     if (e.step === 'shop') d.textContent = [...c.retailers].join(' · ') || 'Searching retailers' , d.textContent += c.pages ? ` · ${c.pages} live page${c.pages > 1 ? 's' : ''} checked` : '';
@@ -244,15 +252,23 @@ function onEvent(e) {
     if (e.tool === 'create_shopping_plan') d.textContent = 'Preparing your plan';
     if (e.tool === 'add_calendar_event') d.textContent = 'Adding the pickup to your calendar';
   }
-  if (e.type === 'tool_end' && e.step === 'context') {
-    c.ctx.end++;
-    if (e.detail) d.textContent = d.textContent === 'Ring · Calendar' ? e.detail : (d.textContent ? d.textContent + ' · ' : '') + e.detail;
-    if (c.ctx.end >= c.ctx.start) { el.classList.remove('on'); el.classList.add('done'); }
-  }
-  if (e.type === 'tool_end' && e.step === 'remember' && e.detail && !el.querySelector('.pills')) {
-    const facts = ['Dry', 'Sensitive', 'Dark Winter', 'Fragrance-free', 'Natural finish', 'No matte', 'Sephora'].filter(f => new RegExp(f.replace('-', '.?'), 'i').test(e.detail));
-    if (facts.length) d.insertAdjacentHTML('afterend', `<div class="pills">${facts.map((f, i) => `<span class="pill" style="animation-delay:${i * 90}ms">${f}</span>`).join('')}</div>`);
-    el.classList.remove('on'); el.classList.add('done');
+  if (e.type === 'tool_end') {
+    c.inflight[k] = Math.max(0, (c.inflight[k] || 0) - 1);
+    if (e.step === 'context' && e.detail) d.textContent = d.textContent === 'Ring · Calendar' ? e.detail : (d.textContent ? d.textContent + ' · ' : '') + e.detail;
+    if (e.step === 'remember' && e.detail && !el.querySelector('.pills')) {
+      const facts = ['Dry', 'Sensitive', 'Dark Winter', 'Fragrance-free', 'Natural finish', 'No matte', 'Sephora'].filter(f => new RegExp(f.replace('-', '.?'), 'i').test(e.detail));
+      if (facts.length) d.insertAdjacentHTML('afterend', `<div class="pills">${facts.map((f, i) => `<span class="pill" style="animation-delay:${i * 90}ms">${f}</span>`).join('')}</div>`);
+    }
+    if (!c.inflight[k]) { el.classList.remove('on'); el.classList.add('done'); }  // the ring fills as soon as its last tool returns
+    /* Between tools the model is thinking, sometimes for half a minute: keep a ring moving, on the
+       next step it has not reached yet (or the last one again, while it writes the basket). */
+    if (!activity.querySelector('.step.on')) {
+      const steps = [...activity.querySelectorAll('.step')];
+      const next = steps.find(s => !s.classList.contains('done') && (s.dataset.k !== 'context' || s.querySelector('.d').textContent));
+      const target = next || steps[steps.length - 1], nd = target.querySelector('.d');
+      if (!next) nd.textContent = e.step === 'act' ? 'Finishing up' : 'Writing your picks'; else if (!nd.textContent) nd.textContent = NEXT_TEXT[target.dataset.k] || '';
+      target.classList.remove('done'); target.classList.add('on');
+    }
   }
 }
 function endActivity() {
@@ -336,13 +352,14 @@ const store = {get: () => { try { return JSON.parse(sessionStorage.getItem('gb_j
 const SID = (() => { try { let s = localStorage.getItem('gb_sid'); if (!s) { s = Math.random().toString(36).slice(2, 12); localStorage.setItem('gb_sid', s); } return s; } catch { return 'default'; } })();
 
 async function waitJob(id) {
-  let misses = 0;
+  let misses = 0, since = 0;
   for (;;) {
     await new Promise(r => setTimeout(r, 2500));
     try {
-      const res = await fetch(`/chat/${id}`, {cache: 'no-store'});
+      const res = await fetch(`/chat/${id}?since=${since}`, {cache: 'no-store'});
       if (res.status === 404) throw new Error('gone');
       const j = await res.json();
+      for (const ev of j.events || []) { since = Math.max(since, ev.seq || 0); onEvent(ev); }
       if (j.status === 'done') return j.result || {};
       const d = activity?.querySelector('.step.on .d, .step .d');
       if (j.queued && d && !d.textContent) d.textContent = 'Finishing another request first.';

@@ -21,6 +21,11 @@ BRANDS = {
         "sephora": ["ilia", "kosas", "rare-beauty", "nars", "armani", "saie", "merit", "tower-28"],
         "ulta": ["nars", "clinique", "lancome", "it-cosmetics", "tarte", "too-faced", "mac", "e.l.f", "nyx"],
     },
+    "suncare": {  # the Switzerland-trip demo: a face sunscreen to splurge on, a reef/lake-friendly body sunscreen to save on
+        "sephora": ["supergoop", "la-roche-posay", "tatcha", "laneige", "beauty-of-joseon", "shiseido", "coola", "sun-bum", "kiehls"],
+        "ulta": ["sun-bum", "supergoop", "la-roche-posay", "neutrogena", "coola", "eltamd", "blue-lizard", "thinksport",
+                 "cerave", "coppertone", "hawaiian-tropic", "babo", "bare-republic", "raw-elements"],
+    },
     "skincare": {  # Angela's brief: French pharmacy, K-beauty and derm brands a North American shopper can buy
         "sephora": ["la-roche-posay", "tatcha", "laneige", "beauty-of-joseon", "drunk-elephant", "kiehls", "supergoop",
                     "glow-recipe", "first-aid-beauty", "paulas-choice", "sunday-riley", "skinceuticals", "cosrx", "medicube"],

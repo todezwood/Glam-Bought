@@ -44,6 +44,9 @@ CATEGORIES = {
                  "exclude": EXCLUDE + ("baby", "body", "hand-", "foot", "gwp", "free-", "scalp", "co-cleanser",
                                        "shave", "beard", "duo", "trio", "candle", "perfume", "fragrance", "deodorant",
                                        "-men-", "lip-", "-lip", "gloss", "patch", "foundation", "concealer", "blush")},
+    "suncare": {"patterns": ["sunscreen", "sunblock", "spf-", "-spf", "sun-stick", "after-sun"],  # face AND body
+                "exclude": EXCLUDE + ("foundation", "tint", "concealer", "gwp", "free-", "lip-", "-lip", "baby", "-men-",
+                                      "self-tan", "bronzer", "tanning")},
 }
 
 
