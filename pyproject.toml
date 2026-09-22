@@ -1,0 +1,22 @@
+[project]
+name = "glam-bought"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "cognee>=1.6.0",
+    "python-dotenv>=1.2.3",
+    "requests>=2.34.2",
+    "strands-agents[anthropic]>=1.56.0",
+    "strands-agents-tools>=0.8.9",
+    "mcp>=2.1.1",
+    "fastapi>=0.141.1",
+    "uvicorn>=0.53.0",
+]
+
+[project.scripts]
+glam-bought = "glam_bought:main"
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"

@@ -1,0 +1,9 @@
+From: orders@ulta.com
+To: angela@example.com
+Date: 2026-05-20
+Subject: Your Ulta Beauty order has shipped
+
+Hi Angela, your order is on its way.
+- CeraVe Moisturizing Cream 16 oz, qty 1, $18.99
+Shipping to: San Francisco, CA
+Note: this is your 3rd purchase of this item. Previous orders: 2026-01-22, 2026-03-21.

@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+.venv/
+reference/
+plans/
+cache/
+logs/
+__pycache__/
+*.pem
+.DS_Store
+node_modules/
