@@ -3,7 +3,7 @@
 Pipeline: Bright Data (MCP tools) -> Cognee (MarketMemoryHook remembers every scrape) -> Strands.
 The agent calls Bright Data's own MCP tools directly; nothing is wrapped.
 """
-import re
+import json
 from datetime import datetime, timezone
 
 from strands.tools.mcp import MCPClient
@@ -11,9 +11,13 @@ from strands.tools.mcp import MCPClient
 from . import config
 
 MAX_CHARS = 7000
-# The subset of Bright Data MCP tools the agent gets. Add web_data_* dataset tools if a
-# retailer we need has one.
-ALLOWED_TOOLS = ["search_engine", "scrape_as_markdown", re.compile(r"^web_data_(amazon|walmart)_product$")]
+# The subset of Bright Data MCP tools the agent gets. Amazon's structured scrapers are fast
+# (8-13 s) and return price, sale, stock, delivery and the full ingredient list; Sephora and
+# Ulta pages render client-side and come back as nav shells or take 100 s.
+ALLOWED_TOOLS = ["search_engine", "web_data_amazon_product_search", "web_data_amazon_product"]
+PRODUCT_FIELDS = ("title", "brand", "final_price", "initial_price", "discount", "currency", "availability",
+                  "is_available", "delivery", "rating", "reviews_count", "ingredients", "description",
+                  "features", "product_details", "url")
 _client: MCPClient | None = None
 
 
@@ -24,7 +28,7 @@ def client() -> MCPClient:
         if not config.BRIGHTDATA_API_TOKEN:
             raise RuntimeError("Set BRIGHTDATA_API_TOKEN in .env")
         _client = MCPClient(
-            url=f"https://mcp.brightdata.com/mcp?token={config.BRIGHTDATA_API_TOKEN}",
+            url=f"https://mcp.brightdata.com/mcp?token={config.BRIGHTDATA_API_TOKEN}&pro=1",
             startup_timeout=60,
             tool_filters={"allowed": ALLOWED_TOOLS},
         )
@@ -57,6 +61,51 @@ def result_text(result) -> str:
         if text:
             parts.append(text)
     return "\n".join(parts)
+
+
+def body_of(text: str) -> str:
+    """Strip Bright Data's untrusted-content envelope down to the payload."""
+    if "_BEGIN=====" in text:
+        text = text.split("_BEGIN=====", 1)[1].split("=====UNTRUSTED", 1)[0]
+    return text.strip()
+
+
+def compact(tool: str, raw: str) -> str:
+    """Reduce a Bright Data result to the product facts the agent needs (and Cognee remembers)."""
+    body = body_of(raw)
+    if tool == "web_data_amazon_product":
+        try:
+            d = json.loads(body)
+            d = d[0] if isinstance(d, list) else d
+        except (ValueError, IndexError):
+            return body[:MAX_CHARS]
+        out = {k: d.get(k) for k in PRODUCT_FIELDS if d.get(k) not in (None, "", [])}
+        out["url"] = out.get("url") or (d.get("input") or {}).get("url")
+        for k in ("description", "ingredients"):
+            if isinstance(out.get(k), str):
+                out[k] = out[k][:1500]
+        if isinstance(out.get("features"), list):
+            out["features"] = out["features"][:6]
+        if isinstance(out.get("product_details"), list):
+            out["product_details"] = [p for p in out["product_details"] if any(w in str(p).lower() for w in ("finish", "coverage", "skin", "shade", "fragrance", "size", "ounce"))][:8]
+        return json.dumps(out, ensure_ascii=False)
+    if tool == "web_data_amazon_product_search":
+        try:
+            items = json.loads(body)
+        except ValueError:
+            return body[:MAX_CHARS]
+        rows = [{"name": i.get("name"), "price": i.get("final_price"), "regular_price": i.get("initial_price") or None,
+                 "rating": i.get("rating"), "ratings": i.get("num_ratings"), "delivery": (i.get("delivery") or [None])[0] if isinstance(i.get("delivery"), list) else i.get("delivery"),
+                 "sponsored": i.get("sponsored"), "url": i.get("url")}
+                for i in items if isinstance(i, dict) and i.get("name")][:20]
+        return json.dumps(rows, ensure_ascii=False)
+    if tool == "search_engine":
+        try:
+            d = json.loads(body)
+            return json.dumps([{"title": r.get("title"), "link": r.get("link"), "description": r.get("description")} for r in d.get("organic", [])[:10]], ensure_ascii=False)
+        except ValueError:
+            return body[:MAX_CHARS]
+    return trim_product_page(body)
 
 
 def now() -> str:

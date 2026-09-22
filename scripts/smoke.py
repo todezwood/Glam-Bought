@@ -30,9 +30,10 @@ def brightdata():
     from glam_bought import web
 
     print("allowed tools:", [t.tool_name for t in web.tools()])
-    timed("search_engine", lambda: web.call("search_engine", {"query": "fragrance-free natural finish foundation dry skin sephora", "engine": "google"}))
-    timed("scrape_as_markdown", lambda: web.trim_product_page(web.call(
-        "scrape_as_markdown", {"url": "https://www.sephora.com/product/ilia-super-serum-skin-tint-spf-40-P455926"})))
+    timed("amazon_search", lambda: web.compact("web_data_amazon_product_search", web.call(
+        "web_data_amazon_product_search", {"keyword": "fragrance free natural finish foundation dry skin", "url": "https://www.amazon.com"})))
+    timed("amazon_product", lambda: web.compact("web_data_amazon_product", web.call(
+        "web_data_amazon_product", {"url": "https://www.amazon.com/dp/B0BGYFJ3RC"})))
 
 
 def docker():

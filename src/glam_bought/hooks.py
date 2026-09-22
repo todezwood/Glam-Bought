@@ -14,33 +14,38 @@ STEPS = {
     "recall_beauty_memory": ("remember", "Remembering you"),
     "remember_beauty_fact": ("remember", "Noting that down"),
     "search_engine": ("shop", "Shopping the web"),
+    "web_data_amazon_product_search": ("shop", "Shopping the web"),
+    "web_data_amazon_product": ("shop", "Checking today's prices"),
     "scrape_as_markdown": ("shop", "Checking today's prices"),
     "rank_products": ("balance", "Balancing your budget"),
     "create_shopping_plan": ("act", "Preparing your plan"),
 }
-SCRAPE_TOOLS = {"scrape_as_markdown"}
+WEB_TOOLS = {"search_engine", "web_data_amazon_product_search", "web_data_amazon_product", "scrape_as_markdown"}
+PAGE_TOOLS = {"web_data_amazon_product", "scrape_as_markdown"}
 
 
 class MarketMemoryHook(HookProvider):
-    """Bright Data -> Cognee. Every page the agent scrapes is remembered into the market
-    dataset with its source URL and timestamp, and trimmed before it reaches the model."""
+    """Bright Data -> Cognee. Every Bright Data result is compacted before it reaches the
+    model; every product page is remembered into the market dataset with its source URL
+    and timestamp."""
 
     def register_hooks(self, registry: HookRegistry) -> None:
-        registry.add_callback(AfterToolCallEvent, self.after_scrape)
+        registry.add_callback(AfterToolCallEvent, self.after_web)
 
-    def after_scrape(self, event: AfterToolCallEvent) -> None:
+    def after_web(self, event: AfterToolCallEvent) -> None:
         name = event.tool_use.get("name", "")
-        if (name not in SCRAPE_TOOLS and not name.startswith("web_data_")) or event.exception:
+        if name not in WEB_TOOLS or event.exception:
+            return
+        facts = web.compact(name, web.result_text(event.result))
+        if not facts:
             return
         url = (event.tool_use.get("input") or {}).get("url", "")
-        page = web.trim_product_page(web.result_text(event.result))
-        if not page:
-            return
         retrieved_at = web.now()
-        stamped = f"source_url: {url}\nretrieved_at: {retrieved_at}\n\n{page}"
-        event.result["content"] = [{"text": stamped}]  # trimmed + stamped for the model
-        memory.remember_in_background(f"[source: live_web] [source_url: {url}] [retrieved_at: {retrieved_at}]\n{page}", config.DS_MARKET)
-        events.emit("market_write", label=url)
+        event.result["content"] = [{"text": f"retrieved_at: {retrieved_at}\n{facts}"}]
+        if name in PAGE_TOOLS:
+            memory.remember_in_background(
+                f"[source: live_web] [source_url: {url}] [retrieved_at: {retrieved_at}]\n{facts}", config.DS_MARKET)
+            events.emit("market_write", label=url)
 
 PROFILE_QUERY = (
     "Summarise this user's beauty profile: skin type, sensitivities, colour analysis, "
@@ -49,20 +54,30 @@ PROFILE_QUERY = (
 
 
 class MemoryHook(HookProvider):
-    """Memory, injected before every turn."""
+    """Memory, injected before every turn. The profile recall is cached and refreshed
+    after every memory write (recall is a ~30 s graph query on Cognee Cloud)."""
 
     def __init__(self, base_prompt: str):
         self.base_prompt = base_prompt
+        self.cached: str | None = None
+        self.writes_seen = 0
 
     def register_hooks(self, registry: HookRegistry) -> None:
         registry.add_callback(BeforeInvocationEvent, self.inject)
+        registry.add_callback(AfterToolCallEvent, self.invalidate)
+
+    def invalidate(self, event: AfterToolCallEvent) -> None:
+        if event.tool_use.get("name") == "remember_beauty_fact" and not event.exception:
+            self.cached = None
 
     def inject(self, event: BeforeInvocationEvent) -> None:
         events.emit("tool_start", step="remember", label="Remembering you")
-        try:
-            recalled = memory.recall_text(PROFILE_QUERY, [config.DS_PROFILE, config.DS_PURCHASES])
-        except Exception as e:  # memory being down must not take the agent down
-            recalled = f"(memory unavailable: {e})"
+        if self.cached is None:
+            try:
+                self.cached = memory.recall_text(PROFILE_QUERY, [config.DS_PROFILE, config.DS_PURCHASES])
+            except Exception as e:  # memory being down must not take the agent down
+                self.cached = f"(memory unavailable: {e})"
+        recalled = self.cached
         events.emit("tool_end", step="remember", label="Remembering you", detail=recalled[:400])
         event.agent.system_prompt = (
             f"{self.base_prompt}\n\n<beauty_brain_recall>\n{recalled}\n</beauty_brain_recall>"

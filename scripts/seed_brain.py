@@ -19,4 +19,5 @@ for path, dataset, source_type in SOURCES:
     memory.remember(text, dataset)
     print(f"remembered {path.name} -> {dataset} ({time.time() - t:.1f}s)")
 
-print("\nrecall check:\n", memory.recall_text("Which foundations did the user dislike, and why?")[:1200])
+print(f"\nwaiting for Cognee Cloud to build the graph... ({memory.wait_until_recallable([config.DS_PROFILE, config.DS_PURCHASES]):.0f}s)")
+print("\nrecall check:\n", memory.recall_text("Which foundations did the user dislike, and why?", [config.DS_PROFILE, config.DS_PURCHASES])[:1200])

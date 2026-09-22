@@ -1,9 +1,13 @@
 """Environment + model configuration."""
+import logging
 import os
 
 from dotenv import load_dotenv
 
 load_dotenv()
+# httpx logs every MCP request URL, which carries the Bright Data token. Keep it out of logs.
+for noisy in ("httpx", "httpcore", "mcp", "strands"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
 
 MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "anthropic").lower()
 COGNEE_SERVICE_URL = os.getenv("COGNEE_SERVICE_URL", "")

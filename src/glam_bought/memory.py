@@ -46,9 +46,33 @@ def remember_in_background(text: str, dataset: str):
     asyncio.run_coroutine_threadsafe(aremember(text, dataset), _loop)
 
 
-def recall_text(query: str, datasets=None, top_k: int = 12) -> str:
-    results = run(arecall(query, datasets, top_k))
-    return _stringify(results)
+def recall_text(query: str, datasets=None, top_k: int = 12, retries: int = 2) -> str:
+    """Recall, tolerating the short window while Cognee Cloud is still building the graph (409)."""
+    import time
+
+    for attempt in range(retries + 1):
+        try:
+            return _stringify(run(arecall(query, datasets, top_k)))
+        except RuntimeError as e:
+            if "409" in str(e) and attempt < retries:
+                time.sleep(5)
+                continue
+            raise
+
+
+def wait_until_recallable(datasets, timeout: int = 300) -> float:
+    """Block until the datasets answer a recall (graph build finished). Returns seconds waited."""
+    import time
+
+    t = time.time()
+    while True:
+        try:
+            run(arecall("what is here?", datasets, 3))
+            return time.time() - t
+        except RuntimeError as e:
+            if "409" not in str(e) or time.time() - t > timeout:
+                raise
+            time.sleep(10)
 
 
 def _stringify(results) -> str:
@@ -56,12 +80,14 @@ def _stringify(results) -> str:
         return results
     out = []
     for r in results if isinstance(results, (list, tuple)) else [results]:
-        if isinstance(r, str):
+        if hasattr(r, "model_dump"):
+            r = r.model_dump()
+        if isinstance(r, dict) and r.get("text"):
+            out.append(r["text"] + (f"  [dataset: {r['dataset_name']}]" if r.get("dataset_name") else ""))
+        elif isinstance(r, str):
             out.append(r)
-        elif hasattr(r, "model_dump"):
-            out.append(json.dumps(r.model_dump(), default=str))
         else:
-            out.append(json.dumps(r, default=str) if isinstance(r, (dict, list)) else str(r))
+            out.append(json.dumps(r, default=str))
     return "\n".join(out)[:6000]
 
 
