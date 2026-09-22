@@ -1,0 +1,32 @@
+{
+  "name": "Angela",
+  "age": 32,
+  "location": "Taiwan",
+  "skin_type": "Dry to combination",
+  "tags": ["Dry to combination", "Hormonal breakouts", "Post-acne marks", "Oily nose", "Smooth and radiant"],
+  "goal": "Anti-ageing, hydration and sun protection every day. Fewer breakouts and less hyperpigmentation every month.",
+  "concerns": [
+    ["Hydration", "Light, purely hydrating textures at home in Taiwan's humid climate. More emollient when she travels somewhere dry."],
+    ["Sun", "Daily protection to minimise UV ageing."],
+    ["Ageing", "Wrinkle prevention around the eyes and the smile lines. Firmness."],
+    ["Breakouts", "Occasional hormonal pimples around her period."],
+    ["Tone", "Hyperpigmentation left by old pimple scars."],
+    ["Sebum", "Excess oil on the nose."],
+    ["Lips", "Lip care is part of the routine."]
+  ],
+  "hero": {"title": "PDRN, high concentration", "text": "Day and night. Prefer products where polydeoxyribonucleotide is the headline ingredient."},
+  "shopping": [
+    ["Budget", "Medium. Best bang for buck on ingredient cleanliness and strength."],
+    ["Leans", "Functional beauty. K-beauty with elite ingredients at a low price."],
+    ["Skips", "Prestige lines that spend on fragrance, packaging and marketing."]
+  ],
+  "travel": {
+    "cadence": "About once a month. Her calendar tells the agent where she is going next.",
+    "rows": [
+      ["Dry", "San Francisco. More emollient moisturisers to prevent dryness."],
+      ["Sun", "Hawaii, Switzerland. Reef and lake friendly, high UV. Sticks or sprays for easy reapplication."]
+    ]
+  },
+  "shops_for": ["Herself", "Friends", "Family", "Babies"],
+  "anticipates": ["Trips", "Birthdays", "Bachelorettes", "Baby showers", "Ring and Health data"]
+}

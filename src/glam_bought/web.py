@@ -84,6 +84,8 @@ def compact(tool: str, raw: str) -> str:
         for k in ("description", "ingredients"):
             if isinstance(out.get(k), str):
                 out[k] = out[k][:1500]
+        if out.get("url") and out.get("ingredients"):
+            PAGES[_key(out["url"])] = str(out["ingredients"])
         if isinstance(out.get("features"), list):
             out["features"] = out["features"][:6]
         if isinstance(out.get("product_details"), list):
@@ -110,6 +112,21 @@ def compact(tool: str, raw: str) -> str:
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="minutes")
+
+
+# Ingredient lists by product URL for every page fetched in this process. The ranker fills them
+# in, so the model never re-types a 1500-character INCI list into a tool call (that alone was
+# ~20 s of output per turn). The Sephora/Ulta scrapers return no ingredient field, so shelf
+# candidates rank as ingredients_unverified unless a page was fetched.
+PAGES: dict[str, str] = {}
+
+
+def _key(url: str) -> str:
+    return url.split("?")[0].rstrip("/")
+
+
+def ingredients_for(url: str) -> str | None:
+    return PAGES.get(_key(url or ""))
 
 
 def trim_product_page(markdown: str) -> str:

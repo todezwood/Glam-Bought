@@ -100,7 +100,13 @@ def recall_beauty_memory(query: str) -> str:
     Args:
         query: A natural-language question, e.g. "foundations the user disliked and why".
     """
-    return recall_text(query) or "Nothing found in memory."
+    try:
+        return recall_text(query) or "Nothing found in memory."
+    except Exception:  # e.g. a dataset still building on Cognee Cloud: fall back to the core three
+        try:
+            return recall_text(query, [config.DS_PROFILE, config.DS_PURCHASES, config.DS_MARKET]) or "Nothing found in memory."
+        except Exception as e:
+            return f"Memory unavailable: {e}"
 
 
 @tool
@@ -116,6 +122,7 @@ def remember_beauty_fact(fact: str, provenance: str, dataset: str = "beauty_prof
     if provenance not in ("told_me", "observed", "inferred"):
         return "provenance must be told_me, observed, or inferred"
     stamp = datetime.now(timezone.utc).isoformat(timespec="minutes")
+    dataset = {"beauty_profile": config.DS_PROFILE, "purchases": config.DS_PURCHASES}.get(dataset, dataset)
     remember(f"[provenance: {provenance}] [recorded: {stamp}] {fact}", dataset)
     events.emit("memory_write", label=fact, provenance=provenance)
     return f"Remembered ({provenance}): {fact}"

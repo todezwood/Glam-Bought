@@ -41,7 +41,8 @@ uv run uvicorn glam_bought.server:app --port 8787
 ```
 
 Open http://localhost:8787 (phone frame on desktop; full-bleed on a phone). CLI: `uv run python -m glam_bought.agent`.
-Smoke tests: `uv run python scripts/smoke.py [strands|cognee|brightdata|docker]`.
+Smoke tests: `uv run python scripts/smoke.py [strands|cognee|brightdata|docker|oura|gcal|oauth]`.
+Ring + calendar: fill `OURA_*` / `GOOGLE_*` in `.env`, then connect once on the laptop from the home screen (`/connect/oura`, `/connect/google`); tokens land in `tokens/`. `OURA_USE_SANDBOX=1` gives fake ring data without a ring.
 
 ## Layout
 
@@ -53,8 +54,11 @@ Smoke tests: `uv run python scripts/smoke.py [strands|cognee|brightdata|docker]`
 | `src/glam_bought/web.py` | Bright Data MCP client, tool filter, result compaction |
 | `src/glam_bought/datasets.py` | Bright Data Datasets API (Sephora / Ulta scrapers): trigger → progress → snapshot, record compaction |
 | `src/glam_bought/sandbox.py` | Docker-run ranking tool |
+| `src/glam_bought/oauth.py` | OAuth2 code flow + token store shared by Oura and Google |
+| `src/glam_bought/oura.py` | `check_wellness`: Oura ring readiness / sleep / stress, remembered into Cognee `wellness` |
+| `src/glam_bought/gcal.py` | `check_calendar` (occasion + deadline) and approval-gated `add_calendar_event` (the pickup) |
 | `src/glam_bought/actions.py` | Approval-gated shopping plan |
-| `src/glam_bought/server.py` | FastAPI: `/chat`, `/events` (SSE), `/profile`, `/healthz` |
+| `src/glam_bought/server.py` | FastAPI: `/chat`, `/events` (SSE), `/profile` + `/profile/brain`, `/healthz`, `/connect/{provider}`, OAuth callbacks |
 | `optimizer/` | Deterministic ranker + Dockerfile |
 | `web/index.html` | Mobile UI, single file |
 | `seed/` | Fictional persona: notes, receipts, order email |

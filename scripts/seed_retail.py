@@ -16,11 +16,17 @@ from pathlib import Path
 
 from glam_bought import config, datasets, memory
 
-PATTERNS = ["foundation", "skin-tint", "concealer", "tinted-moisturizer", "complexion-stick", "cushion"]
 BRANDS = {
-    "sephora": ["ilia", "kosas", "rare-beauty", "nars", "armani", "saie", "merit", "tower-28"],
-    "ulta": ["nars", "clinique", "lancome", "it-cosmetics", "tarte", "too-faced", "mac", "e.l.f", "nyx"],
-    "oliveyoung": [],
+    "base": {
+        "sephora": ["ilia", "kosas", "rare-beauty", "nars", "armani", "saie", "merit", "tower-28"],
+        "ulta": ["nars", "clinique", "lancome", "it-cosmetics", "tarte", "too-faced", "mac", "e.l.f", "nyx"],
+    },
+    "skincare": {  # Angela's brief: French pharmacy, K-beauty and derm brands a North American shopper can buy
+        "sephora": ["la-roche-posay", "tatcha", "laneige", "beauty-of-joseon", "drunk-elephant", "kiehls", "supergoop",
+                    "glow-recipe", "first-aid-beauty", "paulas-choice", "sunday-riley", "skinceuticals", "cosrx", "medicube"],
+        "ulta": ["la-roche-posay", "cerave", "vanicream", "cosrx", "anua", "beauty-of-joseon", "laneige", "supergoop",
+                 "neutrogena", "olay", "kiehls", "clinique", "peach-lily", "mario-badescu"],
+    },
 }
 # Sephora's sitemap is a subset of the catalog; the demo hero is pinned explicitly.
 PINNED = {"sephora": ["https://www.sephora.com/product/true-skin-serum-foundation-P429548"]}  # ILIA, found by the agent live
@@ -36,9 +42,17 @@ def main() -> None:
     ap.add_argument("--snapshot", help="ingest an already-triggered Bright Data snapshot id (waits if still running)")
     ap.add_argument("--urls", nargs="*")
     ap.add_argument("--no-wait", action="store_true", help="skip waiting for the Cognee graph build")
+    ap.add_argument("--category", choices=sorted(datasets.CATEGORIES), default="base", help="which shelf to discover")
+    ap.add_argument("--reviews-only", action="store_true",
+                    help="remember only the shopper reviews of a cached snapshot (products already in the Brain)")
+    ap.add_argument("--timeout", type=int, default=3600, help="seconds to wait for the Bright Data snapshot")
+    ap.add_argument("--all-variations", action="store_true",
+                    help="ask the scraper for every SKU (Angela's Sephora example); plain URLs often return shells")
+    ap.add_argument("--shells-of", help="retry the URLs a cached snapshot returned without title/price")
     args = ap.parse_args()
     retailer = args.retailer
     cache = Path("cache") / retailer
+    cat = datasets.CATEGORIES[args.category]
 
     if args.from_cache:
         records = json.loads(Path(args.from_cache).read_text())
@@ -54,9 +68,14 @@ def main() -> None:
     else:
         if args.urls:
             urls = args.urls
+        elif args.shells_of:
+            urls = list(dict.fromkeys((r.get("input") or {}).get("url") for r in json.loads(Path(args.shells_of).read_text())
+                                      if not r.get("error") and not (r.get("title") and r.get("price"))))
         elif retailer in DISCOVER:
-            found = datasets.pick_urls(DISCOVER[retailer](), PATTERNS, BRANDS[retailer], limit=args.limit)
-            urls = PINNED.get(retailer, []) + [u for u in found if u not in PINNED.get(retailer, [])]
+            pinned = PINNED.get(retailer, []) if args.category == "base" else []
+            found = datasets.pick_urls(DISCOVER[retailer](), cat["patterns"], BRANDS[args.category].get(retailer, []),
+                                       limit=args.limit, exclude=cat["exclude"])
+            urls = pinned + [u for u in found if u not in pinned]
         else:
             sys.exit(f"{retailer}: no sitemap discovery; pass --urls")
         print(f"{len(urls)} {retailer} product URLs")
@@ -66,7 +85,8 @@ def main() -> None:
             return
         t0 = time.time()
         records = datasets.collect(
-            datasets.RETAILERS[retailer]["id"], [{"url": u} for u in urls],
+            datasets.RETAILERS[retailer]["id"],
+            [{"url": u, **({"all_variations": True} if args.all_variations else {})} for u in urls], timeout_s=args.timeout,
             on_progress=lambda sid, p: print(f"  {sid} {p.get('status')} records={p.get('records')} errors={p.get('errors')}  {time.time() - t0:.0f}s", file=sys.stderr),
         )
         cache.mkdir(parents=True, exist_ok=True)
@@ -74,22 +94,32 @@ def main() -> None:
         path.write_text(json.dumps(records, ensure_ascii=False, indent=1))
         print(f"collected {len(records)} rows in {time.time() - t0:.0f}s -> {path}")
 
-    ok = 0
+    ok = reviews = 0
     for rec in datasets.dedupe(records):
         if rec.get("error"):
             print(f"  skip {(rec.get('input') or {}).get('url')}: {rec.get('error_code')}")
             continue
         c = datasets.compact(rec, retailer)
-        memory.remember(datasets.market_text(c, retailer), config.DS_MARKET)
-        ok += 1
-        print(f"  remembered {c.get('brand')} | {c.get('name')} | {c.get('sale_price') or c.get('price')} | {c.get('shades_in_stock')}/{c.get('shades_total')} shades in stock")
-    print(f"{ok} products -> Cognee dataset '{config.DS_MARKET}'")
+        if not args.reviews_only:
+            memory.remember(datasets.market_text(c, retailer), config.DS_MARKET)
+            ok += 1
+            print(f"  remembered {c.get('brand')} | {c.get('name')} | {c.get('sale_price') or c.get('price')} | {c.get('shades_in_stock')}/{c.get('shades_total')} shades in stock")
+        # The scrapers ship shopper reviews with each product: remembered as separate evidence lines
+        # so a recall can cite "a Sephora shopper with combination skin found it oily" with provenance.
+        for r in datasets.retailer_reviews(rec):
+            memory.remember(datasets.market_text(
+                {"retailer": c["retailer"], "product": c.get("name"), "brand": c.get("brand"), "url": c.get("url"), **r},
+                f"{retailer}_reviews", kind="review"), config.DS_MARKET)
+            reviews += 1
+    print(f"{ok} products + {reviews} shopper reviews -> Cognee dataset '{config.DS_MARKET}'")
+    ok = ok or reviews
 
     if not args.no_wait and ok:
         print("waiting for Cognee graph build...")
         waited = memory.wait_until_recallable([config.DS_MARKET])
         print(f"recallable after {waited:.0f}s. Recall check:")
-        print(memory.recall_text(f"foundation at {datasets.RETAILERS[retailer]['name']}: price, finish, shades in stock", [config.DS_MARKET], top_k=3)[:1200])
+        probe = "foundation: price, finish, shades in stock" if args.category == "base" else "fragrance-free moisturizer or sunscreen: price, what shoppers said"
+        print(memory.recall_text(f"{probe} at {datasets.RETAILERS[retailer]['name']}", [config.DS_MARKET], top_k=3)[:1200])
 
 
 if __name__ == "__main__":

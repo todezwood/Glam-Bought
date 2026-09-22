@@ -4,6 +4,7 @@
 .venv/
 reference/
 plans/
+tokens/
 cache/
 logs/
 __pycache__/

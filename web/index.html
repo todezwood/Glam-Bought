@@ -77,6 +77,12 @@ h2{font:500 22px/1.15 var(--serif);color:var(--ink)}
 .ev{display:flex;gap:8px;font-size:12.5px;margin-top:7px;align-items:baseline}
 .src{flex:none;font:500 9px var(--sans);letter-spacing:.14em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--lilac);color:var(--lav-deep)}
 .src.web{background:#E8F0EC;color:var(--save)}
+.src.oura{background:#FBEDE4;color:var(--warn)}
+.src.cal{background:#E9EEF8;color:#4A5F8C}
+.conn{display:flex;gap:8px;justify-content:center;margin-top:18px}
+.conn a,.conn span{font-size:12px;padding:4px 12px;border-radius:999px;background:var(--white);color:var(--lav-deep);text-decoration:none;box-shadow:var(--shadow)}
+.conn .on:before{content:"● ";color:var(--save)}
+.conn .off:before{content:"○ ";color:var(--lav-ink)}
 .foot{font-size:12px;color:var(--lav-deep);margin-top:8px}.foot .warn{color:var(--warn)}
 .excl{border-top:1px solid var(--mist);padding-top:14px;font-size:13px}.excl div{margin-top:6px}
 .savings{color:var(--save);font-weight:400;margin:4px 0 14px}
@@ -101,6 +107,25 @@ input::placeholder{color:var(--lav-ink)}
 .open.scrim{opacity:1;pointer-events:auto}.open.sheet{transform:none}
 .sheet h2{font-size:28px;font-weight:300;margin:6px 0 6px}
 .prov{margin-top:20px}.prov pre{white-space:pre-wrap;font:300 14px/1.55 var(--sans);margin-top:8px}
+/* profile sheet */
+.pf-name{font:300 30px/1.1 var(--serif);color:var(--ink);margin:4px 0 3px}
+.pf-sub{font-size:13.5px}
+.pf-src{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.pf-src span{font-size:11.5px;padding:3px 10px;border-radius:999px;background:var(--mist);color:var(--lav-deep)}
+.pf-src .on:before{content:"● ";color:var(--save)}.pf-src .off:before{content:"○ ";color:var(--lav-ink)}
+.pf-sec{margin-top:20px;padding-top:16px;border-top:1px solid var(--mist)}
+.pf-sec>.label{display:block;margin-bottom:8px}
+.pf-sec .pills{margin:0 0 6px}
+.pf-goal{font:italic 400 17px/1.35 var(--serif);color:var(--ink);margin:2px 0 6px}
+.pf-row{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:7px 0;font-size:13.5px;align-items:baseline;border-top:1px solid #F6F5F8}
+.pf-row:first-of-type{border-top:0}
+.pf-row b{font:500 10px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--lav-ink)}
+.pf-hero{background:var(--lilac);border-radius:20px;padding:14px 16px;display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:center}
+.pf-hero .tile{width:40px;height:40px;border-radius:12px;background:var(--white);font-size:20px}
+.pf-hero .name{font-size:17px}.pf-hero p{font-size:13px;margin-top:2px}
+.pf-brain p{margin-top:8px}.pf-brain ul{padding-left:18px;margin-top:6px}.pf-brain li{font-size:13.5px;margin:3px 0}
+.pf-brain strong{font-weight:500;color:var(--ink)}
+.pf-note{margin-top:22px;font-size:13px;color:var(--lav-deep)}
 .skeleton{height:14px;border-radius:7px;margin:10px 0;background:linear-gradient(90deg,var(--lilac),#fff,var(--lilac));background-size:200% 100%;animation:shimmer 1.4s linear infinite}
 @keyframes shimmer{to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -126,14 +151,17 @@ input::placeholder{color:var(--lav-ink)}
 <script>
 const $ = s => document.querySelector(s), main = $('#main'), sheet = $('#sheet'), scrim = $('#scrim');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const srcClass = s => /web/i.test(s) ? 'web' : /ring|oura/i.test(s) ? 'oura' : /calendar/i.test(s) ? 'cal' : '';
 const safeUrl = u => /^https:\/\//i.test(u || '') ? esc(u) : '#';
 const money = (n, cur) => n == null ? '' : ({USD:'$',EUR:'€',GBP:'£'}[cur] || '$') + Number(n).toFixed(Number(n) % 1 ? 2 : 0);
 const SPARKLE = '<svg class="sparkle" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12z"/></svg>';
 const LOGO = `<svg class="logo" viewBox="0 0 120 80" fill="none"><ellipse cx="60" cy="40" rx="54" ry="30" transform="rotate(-18 60 40)" stroke="#A698BE" stroke-width="1.2"/><path transform="translate(101 8) scale(.42)" fill="#A698BE" d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12z"/><text x="60" y="54" text-anchor="middle" font-family="Pinyon Script, cursive" font-size="46" fill="#A698BE">gb</text></svg>`;
 
 const CASES = [
-  ['Tonight', 'A foundation for dinner', 'Buy today in San Francisco, up to $65.',
-   "I'm going to dinner tonight in SF and need a new foundation. Medium coverage, max $65. I'm happy to splurge if it's really worth it. Find something I can buy today, and check whether anything good is on sale."],
+  ['Next week', 'Switzerland, sun-ready', 'Your calendar says you leave next week.',
+   "I'm hiking in Switzerland next week. Check my calendar for when I leave and my ring for how I've been. Budget is $200 for skincare. I'll spend the most on the facial sunscreen, and I'm most price sensitive on the body sunscreen, which has to be reef and lake friendly and non-toxic for swimming. It all needs to be here before I leave."],
+  ['Tonight', 'A foundation for dinner', 'Buy today, up to $65.',
+   "I'm going to dinner tonight and need a new foundation. Medium coverage, max $65. I'm happy to splurge if it's really worth it. Find something I can buy today, and check whether anything good is on sale."],
   ['The routine', 'Build my routine', 'Serum and moisturiser, under $100.',
    "I need a hydrating serum and a moisturiser, $100 total. Happy to splurge on the serum, price sensitive on the moisturiser. Check sales."],
   ['Tell me', "Something didn't work", "I'll remember it.",
@@ -145,8 +173,25 @@ let basket = null, activity = null, busy = false, started = 0;
 function home() {
   main.innerHTML = `<section class="home">${LOGO}<h1>Beauty, done for you.</h1>
     <p class="sub">Your personal beauty agent. Discover. Shop. Glow.</p>
-    ${CASES.map((c, i) => `<button class="case" data-i="${i}"><span class="label">${c[0]}</span><h2>${c[1]}</h2><span>${c[2]}</span></button>`).join('')}</section>`;
+    ${CASES.map((c, i) => `<button class="case" data-i="${i}"><span class="label">${c[0]}</span><h2>${c[1]}</h2><span>${c[2]}</span></button>`).join('')}
+    <div class="conn" id="conn"></div></section>`;
   main.querySelectorAll('.case').forEach(b => b.onclick = () => send(CASES[b.dataset.i][3]));
+  loadConnections();
+}
+
+async function loadConnections() {
+  try {
+    const h = await (await fetch('/healthz')).json(), here = location.origin === h.oauth_base_url;
+    const pill = (p, name) => h[p + '_connected'] ? `<span class="on">${name}</span>`
+      : here && h[p + '_configured'] ? `<a class="off" href="/connect/${p}">Connect ${name}</a>` : `<span class="off">${name}</span>`;
+    const el = $('#conn'); if (!el) return;
+    el.innerHTML = pill('oura', 'Ring') + pill('google', 'Calendar');
+    const qp = new URLSearchParams(location.search);
+    if (qp.get('connect_error')) {
+      el.insertAdjacentHTML('beforebegin', `<div class="memory"><span class="chip">Connection failed</span><p>Connecting ${esc(qp.get('connect_error'))} did not work. Check the server log and try again.</p></div>`);
+      history.replaceState({}, '', '/');
+    }
+  } catch {}
 }
 
 function add(html) {
@@ -170,28 +215,39 @@ function md(text) {
 }
 
 /* ---------- activity card ---------- */
-const STEPS = [['remember', 'Remembering you'], ['shop', 'Shopping the web'], ['balance', 'Balancing your budget']];
+const STEPS = [['remember', 'Remembering you'], ['context', 'Checking your day'], ['shop', 'Shopping the web'], ['balance', 'Balancing your budget']];
 function startActivity() {
   started = Date.now();
   activity = add(`<div class="card"><span class="label">Working on it</span>
     ${STEPS.map(([k, t]) => `<div class="step" data-k="${k}"><div class="ring"></div><div><div class="t">${t}</div><div class="d"></div></div></div>`).join('')}</div>`);
-  activity.counts = {searches: 0, pages: 0, retailers: new Set()};
+  activity.counts = {searches: 0, pages: 0, retailers: new Set(), ctx: {start: 0, end: 0}};
   activity.slow = setTimeout(() => { const s = activity?.querySelector('.step.on .d'); if (s && !s.textContent) s.textContent = 'Still looking. Good things take a minute.'; }, 20000);
 }
 function onEvent(e) {
   if (e.type === 'memory_write') return memoryPill(e.label);
   if (!activity || !e.step) return;
   const order = STEPS.map(s => s[0]), idx = order.indexOf(e.step === 'act' ? 'balance' : e.step);
-  activity.querySelectorAll('.step').forEach((el, i) => { if (i < idx) { el.classList.remove('on'); el.classList.add('done'); } });
+  activity.querySelectorAll('.step').forEach(el => {
+    if (order.indexOf(el.dataset.k) >= idx) return;
+    if (el.dataset.k === 'context' && !el.classList.contains('on') && !el.classList.contains('done')) { el.remove(); return; }
+    el.classList.remove('on'); el.classList.add('done');
+  });
   const el = activity.querySelector(`.step[data-k="${order[idx]}"]`); if (!el) return;
   const d = el.querySelector('.d'), c = activity.counts;
   if (e.type === 'tool_start') {
     el.classList.add('on'); el.classList.remove('done');
+    if (e.step === 'context') { c.ctx.start++; if (!d.textContent) d.textContent = 'Ring · Calendar'; }
     if (e.tool === 'search_engine' || e.tool === 'web_data_amazon_product_search') c.searches++;
     if (e.tool === 'scrape_as_markdown' || e.tool === 'web_data_amazon_product') { c.pages++; const m = /https?:\/\/(?:www\.)?([^./]+)/.exec(e.input?.url || ''); if (m) c.retailers.add(m[1][0].toUpperCase() + m[1].slice(1)); }
     if (e.step === 'shop') d.textContent = [...c.retailers].join(' · ') || 'Searching retailers' , d.textContent += c.pages ? ` · ${c.pages} live page${c.pages > 1 ? 's' : ''} checked` : '';
     if (e.tool === 'rank_products') d.textContent = `Comparing ${(e.input?.candidates || []).length} offers in a secure sandbox`;
     if (e.tool === 'create_shopping_plan') d.textContent = 'Preparing your plan';
+    if (e.tool === 'add_calendar_event') d.textContent = 'Adding the pickup to your calendar';
+  }
+  if (e.type === 'tool_end' && e.step === 'context') {
+    c.ctx.end++;
+    if (e.detail) d.textContent = d.textContent === 'Ring · Calendar' ? e.detail : (d.textContent ? d.textContent + ' · ' : '') + e.detail;
+    if (c.ctx.end >= c.ctx.start) { el.classList.remove('on'); el.classList.add('done'); }
   }
   if (e.type === 'tool_end' && e.step === 'remember' && e.detail && !el.querySelector('.pills')) {
     const facts = ['Dry', 'Sensitive', 'Dark Winter', 'Fragrance-free', 'Natural finish', 'No matte', 'Sephora'].filter(f => new RegExp(f.replace('-', '.?'), 'i').test(e.detail));
@@ -215,6 +271,7 @@ function renderBasket(b) {
   const cur = b.currency, items = b.items || [];
   const pct = b.budget ? Math.min(100, 100 * (b.total || 0) / b.budget) : 0;
   const node = add(`<div class="card"><span class="label">${esc(b.title || 'For you')}</span>
+    ${b.occasion ? `<div class="meta" style="margin-top:4px">${esc(b.occasion)}</div>` : ''}
     <div class="bhead"><div class="total">${money(b.total, cur)}</div>${b.budget ? `<div>of ${money(b.budget, cur)}</div>` : ''}</div>
     ${b.budget ? '<div class="bar"><i></i></div>' : ''}
     ${b.savings > 0 ? `<div class="savings">You save ${money(b.savings, cur)} versus regular prices</div>` : '<div style="height:8px"></div>'}
@@ -225,10 +282,10 @@ function renderBasket(b) {
       <div class="meta">${esc([it.shade, it.meta].filter(Boolean).join(' · '))}</div>
       <div class="price">${money(it.price, cur)}${it.regular_price > it.price ? `<s>${money(it.regular_price, cur)}</s><b>−${esc(it.discount_pct)}%</b>` : ''}</div>
       <div class="reason">${esc(it.reason)}</div>
-      ${(it.evidence || []).map(ev => `<div class="ev"><span class="src ${/web/i.test(ev.source) ? 'web' : ''}">${esc(ev.source)}</span><span>${esc(ev.text)}</span></div>`).join('')}
+      ${(it.evidence || []).map(ev => `<div class="ev"><span class="src ${srcClass(ev.source)}">${esc(ev.source)}</span><span>${esc(ev.text)}</span></div>`).join('')}
       <div class="foot">${esc([it.retailer, it.checked].filter(Boolean).join(' · '))}${it.availability ? ` · <span class="warn">${esc(it.availability)}</span>` : ''}</div>
       </div></div>`).join('')}
-    ${(b.excluded || []).length ? `<div class="excl"><span class="label">What I left out</span>${b.excluded.map(x => `<div class="ev"><span class="src ${/web/i.test(x.source) ? 'web' : ''}">${esc(x.source || 'Brain')}</span><span><strong style="font-weight:400;color:var(--ink)">${esc(x.name)}</strong> — ${esc(x.why)}</span></div>`).join('')}</div>` : ''}
+    ${(b.excluded || []).length ? `<div class="excl"><span class="label">What I left out</span>${b.excluded.map(x => `<div class="ev"><span class="src ${srcClass(x.source)}">${esc(x.source || 'Brain')}</span><span><strong style="font-weight:400;color:var(--ink)">${esc(x.name)}</strong> — ${esc(x.why)}</span></div>`).join('')}</div>` : ''}
     <div style="height:18px"></div><button class="cta" id="review">Review shopping plan</button><button class="cta ghost" id="change">Change something</button></div>`);
   requestAnimationFrame(() => { const bar = node.querySelector('.bar i'); if (bar) bar.style.width = pct + '%'; });
   node.querySelector('#review').onclick = approvalSheet;
@@ -252,23 +309,60 @@ function approvalSheet() {
     $('#approve').disabled = true; $('#approve').textContent = 'Preparing';
     const names = picks.map(i => `${i.brand} ${i.name} from ${i.retailer} at ${money(i.price, basket.currency)}`).join('; ');
     closeSheet();
-    await send(`Yes, I approve. Please prepare the plan for: ${names}.`, true, picks);
+    await send(`Yes, I approve. Please prepare the plan for: ${names}.${basket.occasion ? ' Then put the pickup on my calendar before the occasion, at the time you proposed.' : ''}`, true, picks);
   };
 }
 
-function planCard(picks) {
+function planCard(picks, cal) {
   const total = picks.reduce((s, i) => s + Number(i.price || 0), 0), saved = picks.reduce((s, i) => s + Math.max(0, Number(i.regular_price || i.price) - Number(i.price)), 0);
   add(`<div class="card"><span class="label" style="display:flex;gap:6px;align-items:center">${SPARKLE} Approved</span><h2 style="margin-top:6px">Your plan is ready.</h2>
     ${picks.map(i => `<a class="buy" href="${safeUrl(i.url)}" target="_blank" rel="noopener"><span>${esc(i.brand)} ${esc(i.name)}<br><span class="meta">${money(i.price, basket.currency)}</span></span><span>Buy at ${esc(i.retailer)} ↗</span></a>`).join('')}
-    <div class="buy"><span class="label">Total</span><span>${money(total, basket.currency)}${saved > 0 ? ` · saved ${money(saved, basket.currency)}` : ''}</span></div></div>`);
+    <div class="buy"><span class="label">Total</span><span>${money(total, basket.currency)}${saved > 0 ? ` · saved ${money(saved, basket.currency)}` : ''}</span></div>
+    ${cal && cal.url ? `<a class="buy" href="${safeUrl(cal.url)}" target="_blank" rel="noopener"><span>${SPARKLE} On your calendar<br><span class="meta">${esc(cal.title)} · ${esc(cal.when)}</span></span><span>Open ↗</span></a>` : ''}</div>`);
 }
 
 function memoryPill(text) {
+  brainDirty = true;
   add(`<div class="memory"><span class="chip">${SPARKLE} I'll remember that</span><p>${esc(text)}</p></div>`);
   const p = $('#profileBtn'); p.classList.remove('pulse'); void p.offsetWidth; p.classList.add('pulse');
 }
 
 /* ---------- chat ---------- */
+/* A turn takes 2-3 minutes: POST /chat returns a job at once and we poll it, so neither the tunnel's
+   100 s limit nor a page reload loses the answer (the pending job is kept in sessionStorage). */
+const store = {get: () => { try { return JSON.parse(sessionStorage.getItem('gb_job')); } catch { return null; } },
+               set: v => { try { v ? sessionStorage.setItem('gb_job', JSON.stringify(v)) : sessionStorage.removeItem('gb_job'); } catch {} }};
+/* Each device gets its own conversation on the server, so two people testing never queue behind each other. */
+const SID = (() => { try { let s = localStorage.getItem('gb_sid'); if (!s) { s = Math.random().toString(36).slice(2, 12); localStorage.setItem('gb_sid', s); } return s; } catch { return 'default'; } })();
+
+async function waitJob(id) {
+  let misses = 0;
+  for (;;) {
+    await new Promise(r => setTimeout(r, 2500));
+    try {
+      const res = await fetch(`/chat/${id}`, {cache: 'no-store'});
+      if (res.status === 404) throw new Error('gone');
+      const j = await res.json();
+      if (j.status === 'done') return j.result || {};
+      const d = activity?.querySelector('.step.on .d, .step .d');
+      if (j.queued && d && !d.textContent) d.textContent = 'Finishing another request first.';
+      misses = 0;
+    } catch (e) {
+      if (e.message === 'gone' || ++misses > 8) throw e;
+    }
+  }
+}
+
+function showResult(data, approved, picks) {
+  endActivity();
+  const reply = data.reply || '';
+  const m = reply.match(/```basket\s*([\s\S]*?)```/);
+  const prose = reply.replace(/```basket[\s\S]*?```/, '').trim();
+  if (prose) add(`<div class="msg agent"><div class="avatar">gb</div><div class="bubble">${md(prose)}</div></div>`);
+  if (m) { try { renderBasket(JSON.parse(m[1])); } catch (e) { console.warn('basket parse', e); } }
+  if (approved && picks && basket) planCard(picks, data.calendar);
+}
+
 async function send(text, approved = false, picks = null) {
   if (busy || !text.trim()) return;
   busy = true;
@@ -276,40 +370,81 @@ async function send(text, approved = false, picks = null) {
   startActivity();
   try {
     const replay = new URLSearchParams(location.search).has('replay');
-    const res = await fetch('/chat', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: text, approved, replay})});
-    const data = await res.json();
-    endActivity();
-    const reply = data.reply || '';
-    const m = reply.match(/```basket\s*([\s\S]*?)```/);
-    const prose = reply.replace(/```basket[\s\S]*?```/, '').trim();
-    if (prose) add(`<div class="msg agent"><div class="avatar">gb</div><div class="bubble">${md(prose)}</div></div>`);
-    if (m) { try { renderBasket(JSON.parse(m[1])); } catch (e) { console.warn('basket parse', e); } }
-    if (approved && picks) planCard(picks);
+    const res = await fetch('/chat', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: text, approved, replay, session: SID})});
+    let data = await res.json();
+    if (data.job) {
+      store.set({job: data.job, text, approved, picks});
+      data = await waitJob(data.job);
+      store.set(null);
+    }
+    showResult(data, approved, picks);
   } catch (e) {
+    store.set(null);
     endActivity();
     add(`<div class="msg agent"><div class="avatar">gb</div><div class="bubble"><p>I lost my connection for a moment. Please try again.</p></div></div>`);
   }
   busy = false;
 }
 
+async function resume() {
+  const p = store.get();
+  if (!p || !p.job) return;
+  busy = true;
+  add(`<div class="msg user">${esc(p.approved ? 'Approve plan' : p.text)}</div>`);
+  startActivity();
+  try { showResult(await waitJob(p.job), p.approved, p.picks); }
+  catch { endActivity(); add(`<div class="msg agent"><div class="avatar">gb</div><div class="bubble"><p>I lost track of that one. Please ask again.</p></div></div>`); }
+  store.set(null);
+  busy = false;
+}
+
 $('#form').onsubmit = e => { e.preventDefault(); const i = $('#input'); const v = i.value; i.value = ''; send(v); };
 $('#homeBtn').onclick = home;
+let brainDirty = false;  // a memory write since the Brain section was last fetched
+const pillList = (xs, cls = '') => `<div class="pills">${(xs || []).map(x => `<span class="pill ${cls}">${esc(x)}</span>`).join('')}</div>`;
+const rows = xs => (xs || []).map(([k, v]) => `<div class="pf-row"><b>${esc(k)}</b><span>${esc(v)}</span></div>`).join('');
+const section = (title, body) => `<div class="pf-sec"><span class="label">${title}</span>${body}</div>`;
+
+function renderProfile(p, src) {
+  const on = (ok, name) => `<span class="${ok ? 'on' : 'off'}">${name}</span>`;
+  const ring = src.ring ? on(true, src.ring_as_of ? `Ring · ${esc(src.ring_as_of.slice(5).replace('-', '/'))}` : 'Ring') : on(false, 'Ring');
+  const sources = `<div class="pf-src">${ring}${on(src.calendar, 'Calendar')}<span>${src.receipts} receipts</span><span>${src.notes} notes</span></div>`;
+  return `<span class="label">Your beauty profile</span>
+    <h2 class="pf-name">${esc(p.name)}</h2>
+    <div class="pf-sub">${esc(p.age)} · ${esc(p.location)} · ${esc(p.skin_type)} skin</div>
+    ${sources}
+    ${section('Skin', pillList(p.tags) + `<p class="pf-goal">${esc(p.goal)}</p>` + rows(p.concerns))}
+    ${section('Hero ingredient', `<div class="pf-hero"><div class="tile">${SPARKLE}</div><div><div class="name">${esc(p.hero.title)}</div><p>${esc(p.hero.text)}</p></div></div>`)}
+    ${section('How she shops', rows(p.shopping))}
+    ${section(`Travel · ${esc(p.travel.cadence)}`, rows(p.travel.rows))}
+    ${section('Shops for', pillList(p.shops_for) + `<div class="pf-row"><b>Watches</b><span>${esc((p.anticipates || []).join(' · '))}</span></div>`)}
+    ${section('From the Brain', `<div class="pf-brain" id="brain"><div class="skeleton"></div><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:60%"></div></div>`)}
+    <p class="pf-note">You can correct anything here. Just tell me.</p>`;
+}
+
 $('#profileBtn').onclick = async () => {
-  openSheet(`<span class="label">Your beauty profile</span><h2>What I know about you</h2><div id="prof"><div class="skeleton"></div><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:60%"></div></div>`);
+  openSheet(`<span class="label">Your beauty profile</span><h2 class="pf-name">&nbsp;</h2><div id="prof"><div class="skeleton"></div><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:60%"></div></div>`);
   try {
-    const p = await (await fetch('/profile')).json();
-    $('#prof').innerHTML = `<div class="prov"><span class="label">● You told me</span><pre>${esc(p.told_me)}</pre></div>
-      <div class="prov"><span class="label">◐ I noticed</span><pre>${esc(p.observed)}</pre></div>
-      <p style="margin-top:22px;font-size:13px">You can correct anything here. Just tell me.</p>`;
-  } catch { $('#prof').textContent = 'Your profile is unavailable right now.'; }
+    const d = await (await fetch('/profile')).json();
+    if (d.error) throw new Error(d.error);
+    sheet.innerHTML = renderProfile(d.profile, d.sources);
+  } catch { $('#prof').textContent = 'Your profile is unavailable right now.'; return; }
+  try {
+    const fresh = brainDirty ? '?fresh=1' : '';
+    const b = await (await fetch('/profile/brain' + fresh)).json();
+    const el = $('#brain'); if (!el) return;
+    if (b.brain) { el.innerHTML = md(b.brain.replace(/^(\s*\*\*[^*\n]+\*\*\s*)$/gm, '$1\n')); brainDirty = false; }
+    else el.innerHTML = `<p class="meta">${esc(b.error || 'Nothing recorded yet.')}</p>`;
+  } catch { const el = $('#brain'); if (el) el.innerHTML = '<p class="meta">The Brain is busy right now. Open this again in a moment.</p>'; }
 };
 
 (function listen() {
-  const es = new EventSource('/events');
+  const es = new EventSource('/events?session=' + SID);
   es.onmessage = m => { try { onEvent(JSON.parse(m.data)); } catch {} };
   es.onerror = () => { es.close(); setTimeout(listen, 2000); };
 })();
 home();
+resume();
 </script>
 </body>
 </html>

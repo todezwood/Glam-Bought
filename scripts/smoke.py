@@ -1,4 +1,4 @@
-"""Smoke tests. Run one:  uv run python scripts/smoke.py [strands|cognee|brightdata|docker]"""
+"""Smoke tests. Run one:  uv run python scripts/smoke.py [strands|cognee|brightdata|docker|oura|gcal|oauth]"""
 import sys
 import time
 
@@ -44,5 +44,37 @@ def docker():
         constraints={"budget": 65, "exclude_ingredients": ["fragrance"]}))
 
 
+def oura():
+    """Ring reading via the tool. OURA_USE_SANDBOX=1 works without a ring; `unavailable` lists any 403'd collection."""
+    from glam_bought import oura as o
+
+    timed("oura.check_wellness", lambda: o.check_wellness(days=4))
+
+
+def gcal():
+    """Read the week ahead, then create and delete a 15-minute event one hour from now."""
+    from datetime import timedelta
+    from glam_bought import config, gcal as g
+
+    timed("gcal.check_calendar", lambda: g.check_calendar(days_ahead=10))
+    start = config.local_now() + timedelta(hours=1)
+    ev = timed("gcal.insert_event", lambda: g.insert_event(
+        "GlamBought smoke test", start, start + timedelta(minutes=15), description="safe to delete"))
+    g.delete_event(ev["id"])
+    print("deleted smoke event", ev.get("htmlLink"))
+
+
+def oauth():
+    """Force one refresh per connected provider: proves rotation + persistence before the demo."""
+    from glam_bought import oauth as o
+
+    for p in ("oura", "google"):
+        if o.connected(p):
+            timed(f"refresh {p}", lambda p=p: {k: v for k, v in o.refresh(p).items() if k in ("expires_at", "obtained_at")})
+        else:
+            print(f"[{p}] not connected")
+
+
 if __name__ == "__main__":
-    {"strands": strands, "cognee": cognee, "brightdata": brightdata, "docker": docker}[sys.argv[1]]()
+    {"strands": strands, "cognee": cognee, "brightdata": brightdata, "docker": docker,
+     "oura": oura, "gcal": gcal, "oauth": oauth}[sys.argv[1]]()
